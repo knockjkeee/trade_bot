@@ -104,6 +104,7 @@ class Parser:
                 f" {np.array(df['Close'][-5:][2])} ; {np.array(df['Close'][-5:][3])} ; {np.array(df['Close'][-5:][4])}")
 
             #TODO доделать реализацию добавив сроки в формат данных и сохранить полученный результат
+            #TODO сначало проверить текщие данные
             open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])), float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
             data, meta_data = self.ts.get_intraday(symbol=stock, interval='1min', outputsize='full')
             print(df)
@@ -255,6 +256,7 @@ class Parser:
             cr_y = df.index[-1:].tolist()[0].year
             current_d = str(cr_d) + '/' + str(cr_m) + '/' + str(cr_y)
             # TODO доделать реализацию добавив реализацию и сроки в формат данных и обновить данные
+            # TODO сначало проверить текщие данные
             try:
                 if self.current_date == current_d:
                     pass
