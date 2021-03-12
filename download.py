@@ -63,17 +63,17 @@ class Parser:
             'EMA_20',
             'EMA_100', 'CLOSE_prev',
             'Percentage_1', 'p1_Op_0,5_up', 'p1_0,5_1.0_up', 'p1_1,0_1,5_up', 'p1_1,5_2,0_up', 'p1_2,0_over_up',
-            'p1_Op_0,2_dwn', 'p1_0,2_0,3_dwn', 'p1_0,3_0,4_dwn', 'p1_0,4_0,5_dwn', 'p1_0,5_dwn,less',
+            'p1_Op_0,2_dwn', 'p1_0,2_0,3_dwn', 'p1_0,3_0,4_dwn', 'p1_0,4_0,5_dwn', 'p1_0,5_less_dwn',
             'Percentage_2', 'p2_Op_0,5_up', 'p2_0,5_1.0_up', 'p2_1,0_1,5_up', 'p2_1,5_2,0_up', 'p2_2,0_over_up',
-            'p2_Op_0,2_dwn', 'p2_0,2_0,3_dwn', 'p2_0,3_0,4_dwn', 'p2_0,4_0,5_dwn', 'p2_0,5_dwn,less',
+            'p2_Op_0,2_dwn', 'p2_0,2_0,3_dwn', 'p2_0,3_0,4_dwn', 'p2_0,4_0,5_dwn', 'p2_0,5_less_dwn',
             'Percentage_3', 'p3_Op_0,5_up', 'p3_0,5_1.0_up', 'p3_1,0_1,5_up', 'p3_1,5_2,0_up', 'p3_2,0_over_up',
-            'p3_Op_0,2_dwn', 'p3_0,2_0,3_dwn', 'p3_0,3_0,4_dwn', 'p3_0,4_0,5_dwn', 'p3_0,5_dwn,less',
+            'p3_Op_0,2_dwn', 'p3_0,2_0,3_dwn', 'p3_0,3_0,4_dwn', 'p3_0,4_0,5_dwn', 'p3_0,5_less_dwn',
             'Percentage_4', 'p4_Op_0,5_up', 'p4_0,5_1.0_up', 'p4_1,0_1,5_up', 'p4_1,5_2,0_up', 'p4_2,0_over_up',
-            'p4_Op_0,2_dwn', 'p4_0,2_0,3_dwn', 'p4_0,3_0,4_dwn', 'p4_0,4_0,5_dwn', 'p4_0,5_dwn,less',
+            'p4_Op_0,2_dwn', 'p4_0,2_0,3_dwn', 'p4_0,3_0,4_dwn', 'p4_0,4_0,5_dwn', 'p4_0,5_less_dwn',
             'Open_point', 'High_point', 'Exchange'
         ])
         counter = 0
-        index = 1
+        # index = 1
         good_stocks = []
 
         for stock in tqdm(stocks['TICKER'], desc=f'search relevant ticker by tech analise of data tickers where close '
@@ -90,6 +90,7 @@ class Parser:
                 technical_indicators = investpy.technical.technical_indicators(
                     stock, self.country, 'stock', interval='daily')
                 country = self.country
+
             except:
                 continue
             tech_buy, tech_sell = self.get_tech_idicator_sell_buy(technical_indicators)
@@ -100,9 +101,10 @@ class Parser:
 
             if tech_buy < 9 or tech_sell > 2 or moving_sma_buy < 5 or moving_ema_buy < 5:
                 continue
+            #TODO место сбора детальных данных
             ema_100, ema_20, sma_100, sma_20 = self.get_sma_ema_20_100(moving_averages)
-
-            print(str(index) + ') ' + 'STOCK =', stock)
+            print()
+            print(str(len(good_stocks) + 1) + ') ' + 'STOCK =', stock)
             print(f'Tech sell indicators: to buy = {tech_buy} of 12;  to sell = {tech_sell} of 12')
             print(f'SMA moving averages: to buy = {moving_sma_buy} of 6;  to sell = {moving_sma_sell} of 6')
             print(f'EMA moving averages: to buy = {moving_ema_buy} of 6;  to sell = {moving_ema_sell} of 6')
@@ -111,45 +113,50 @@ class Parser:
                 f"Prices Last Five days of  {stock} = {np.array(df['Close'][-5:][0])} ; {np.array(df['Close'][-5:][1])} ;"
                 f" {np.array(df['Close'][-5:][2])} ; {np.array(df['Close'][-5:][3])} ; {np.array(df['Close'][-5:][4])}")
 
-            # TODO доделать реализацию добавив сроки в формат данных и сохранить полученный результат
-            # TODO сначало проверить текущие данные
             open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])),
                          float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
-            data, meta_data = self.ts.get_intraday(symbol=stock, interval='1min', outputsize='full')
-            data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
-            # print(df)
+            time.sleep(1)
 
-            high_data = []
-            low_data = []
+            try:
+                data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
+                data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
+                # print(df)
+                high_data = []
+                low_data = []
 
-            for index, value in enumerate(open_data):
-                high, low = self.get_stock_intraday(open=value, interval=1, index=index, data=data)
-                high_data.append(high)
-                low_data.append(low)
-                # print(index)
-                # print(value)
-                # print(open_data[index])
-                # print(stock)
-                # print(high)
-                # print(low)
+                for index, value in enumerate(open_data):
+                    high, low = self.get_stock_intraday(open=value, interval=1, index=index, data=data)
+                    high_data.append(high)
+                    low_data.append(low)
+                    # print(index)
+                    # print(value)
+                    # print(open_data[index])
+                    # print(stock)
+                    # print(high)
+                    # print(low)
 
-            # print(high_data)
-            # print(low_data)
-            #
-            # exit()
+                # print(high_data)
+                # print(low_data)
+                #
+                # exit()
+            except:
+                print()
+                print(f"ERROR load data {stock} of alpha_vantage.timeseries ")
+                continue
 
             pp_1, pp_2, pp_3, pp_4 = self.get_percentage_for_four_day_ago(df)
 
             print('Percentage +/- of ' + stock + ' =', pp_1,
                   ';', pp_2, ';', pp_3, ';', pp_4, )
-            print()
+            # print()
 
-            index += 1
-            counter += 1
-            good_stocks.append(stock)
-            time.sleep(2)
 
-            name_stock_exchange = self.get_name_stock_exchange(stock)
+            try:
+                name_stock_exchange = self.get_name_stock_exchange(stock)
+            except:
+                print()
+                print(f"ERROR load name {stock} exchange of investpy ")
+                continue
 
             data_ticker = data_ticker.append({
                 'TICKER': stock,
@@ -174,7 +181,7 @@ class Parser:
                 'p1_0,2_0,3_dwn': low_data[3][1],
                 'p1_0,3_0,4_dwn': low_data[3][2],
                 'p1_0,4_0,5_dwn': low_data[3][3],
-                'p1_0,5_dwn,less': low_data[3][4],
+                'p1_0,5_less_dwn': low_data[3][4],
                 'Percentage_2': pp_2,
                 'p2_Op_0,5_up': high_data[2][0],
                 'p2_0,5_1.0_up': high_data[2][1],
@@ -185,7 +192,7 @@ class Parser:
                 'p2_0,2_0,3_dwn': low_data[2][1],
                 'p2_0,3_0,4_dwn': low_data[2][2],
                 'p2_0,4_0,5_dwn': low_data[2][3],
-                'p2_0,5_dwn,less': low_data[2][4],
+                'p2_0,5_less_dwn': low_data[2][4],
                 'Percentage_3': pp_3,
                 'p3_Op_0,5_up': high_data[1][0],
                 'p3_0,5_1.0_up': high_data[1][1],
@@ -196,7 +203,7 @@ class Parser:
                 'p3_0,2_0,3_dwn': low_data[1][1],
                 'p3_0,3_0,4_dwn': low_data[1][2],
                 'p3_0,4_0,5_dwn': low_data[1][3],
-                'p3_0,5_dwn,less': low_data[1][4],
+                'p3_0,5_less_dwn': low_data[1][4],
                 'Percentage_4': pp_4,
                 'p4_Op_0,5_up': high_data[0][0],
                 'p4_0,5_1.0_up': high_data[0][1],
@@ -207,9 +214,14 @@ class Parser:
                 'p4_0,2_0,3_dwn': low_data[0][1],
                 'p4_0,3_0,4_dwn': low_data[0][2],
                 'p4_0,4_0,5_dwn': low_data[0][3],
-                'p4_0,5_dwn,less': low_data[0][4],
+                'p4_0,5_less_dwn': low_data[0][4],
                 'Exchange': name_stock_exchange
             }, ignore_index=True)
+            print(f'{stock} add to data...')
+            index += 1
+            counter += 1
+            good_stocks.append(stock)
+            time.sleep(1)
 
             # data_ticker.to_excel('data_ticker.xlsx', index=True, header=True)
             # exit()
@@ -273,9 +285,9 @@ class Parser:
                         (result_data['3. low'] < percent_m_0_4) & (result_data['3. low'] >= percent_m_0_5)).dropna())
                 percent_m_0_5_less = len(result_data.where(result_data['3. low'] < percent_m_0_5).dropna())
 
-                low_data = [open_percent_0_5, percent_0_5_percent_1, percent_1_percent_1_5, percent_1_5_percent_2,
+                high_data = [open_percent_0_5, percent_0_5_percent_1, percent_1_percent_1_5, percent_1_5_percent_2,
                             percent_2_over]
-                high_data = [open_percent_m_0_2, percent_m_0_2_percent_m_0_3, percent_m_0_3_percent_m_0_4,
+                low_data = [open_percent_m_0_2, percent_m_0_2_percent_m_0_3, percent_m_0_3_percent_m_0_4,
                              percent_m_0_4_percent_m_0_5,
                              percent_m_0_5_less]
                 # high_data.append(high)
@@ -347,6 +359,7 @@ class Parser:
         return pp_1, pp_2, pp_3, pp_4
 
     def get_name_stock_exchange(self, stock):
+        time.sleep(1)
         ua = UserAgent()
         headers = {'User-Agent': str(ua.chrome)}
         url_ticker = investpy.get_stock_company_profile(stock, self.country)['url']
