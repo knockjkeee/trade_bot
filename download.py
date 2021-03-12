@@ -61,7 +61,15 @@ class Parser:
         data_ticker = pd.DataFrame(columns=[
             'TICKER', 'Tech_buy', 'Tech_sell', 'SMA_buy', 'SMA_sell', 'SMA_20', 'SMA_100', 'EMA_buy', 'EMA_sell',
             'EMA_20',
-            'EMA_100', 'CLOSE_prev', 'Percentage_1', 'Percentage_2', 'Percentage_3', 'Percentage_4',
+            'EMA_100', 'CLOSE_prev',
+            'Percentage_1', 'p1_Op_0,5_up', 'p1_0,5_1.0_up', 'p1_1,0_1,5_up', 'p1_1,5_2,0_up', 'p1_2,0_over_up',
+            'p1_Op_0,2_dwn', 'p1_0,2_0,3_dwn', 'p1_0,3_0,4_dwn', 'p1_0,4_0,5_dwn', 'p1_0,5_dwn,less',
+            'Percentage_2', 'p2_Op_0,5_up', 'p2_0,5_1.0_up', 'p2_1,0_1,5_up', 'p2_1,5_2,0_up', 'p2_2,0_over_up',
+            'p2_Op_0,2_dwn', 'p2_0,2_0,3_dwn', 'p2_0,3_0,4_dwn', 'p2_0,4_0,5_dwn', 'p2_0,5_dwn,less',
+            'Percentage_3', 'p3_Op_0,5_up', 'p3_0,5_1.0_up', 'p3_1,0_1,5_up', 'p3_1,5_2,0_up', 'p3_2,0_over_up',
+            'p3_Op_0,2_dwn', 'p3_0,2_0,3_dwn', 'p3_0,3_0,4_dwn', 'p3_0,4_0,5_dwn', 'p3_0,5_dwn,less',
+            'Percentage_4', 'p4_Op_0,5_up', 'p4_0,5_1.0_up', 'p4_1,0_1,5_up', 'p4_1,5_2,0_up', 'p4_2,0_over_up',
+            'p4_Op_0,2_dwn', 'p4_0,2_0,3_dwn', 'p4_0,3_0,4_dwn', 'p4_0,4_0,5_dwn', 'p4_0,5_dwn,less',
             'Open_point', 'High_point', 'Exchange'
         ])
         counter = 0
@@ -76,7 +84,7 @@ class Parser:
             try:
                 df = investpy.get_stock_historical_data(
                     stock=stock, country=self.country, from_date=self.from_date, to_date=self.current_date)
-                    # stock='REZI', country=self.country, from_date=self.from_date, to_date=self.current_date)
+                # stock='REZI', country=self.country, from_date=self.from_date, to_date=self.current_date)
 
                 time.sleep(5)
                 technical_indicators = investpy.technical.technical_indicators(
@@ -103,29 +111,32 @@ class Parser:
                 f"Prices Last Five days of  {stock} = {np.array(df['Close'][-5:][0])} ; {np.array(df['Close'][-5:][1])} ;"
                 f" {np.array(df['Close'][-5:][2])} ; {np.array(df['Close'][-5:][3])} ; {np.array(df['Close'][-5:][4])}")
 
-            #TODO доделать реализацию добавив сроки в формат данных и сохранить полученный результат
-            #TODO сначало проверить текщие данные
-            open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])), float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
+            # TODO доделать реализацию добавив сроки в формат данных и сохранить полученный результат
+            # TODO сначало проверить текущие данные
+            open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])),
+                         float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
             data, meta_data = self.ts.get_intraday(symbol=stock, interval='1min', outputsize='full')
-            print(df)
+            data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
+            # print(df)
 
             high_data = []
             low_data = []
 
-
             for index, value in enumerate(open_data):
-                high, low = self.get_stock_intraday(value, 1, stock, index, data, meta_data)
+                high, low = self.get_stock_intraday(open=value, interval=1, index=index, data=data)
                 high_data.append(high)
                 low_data.append(low)
-                print(stock)
-                print(value)
-                print(high)
-                print(low)
+                # print(index)
+                # print(value)
+                # print(open_data[index])
+                # print(stock)
+                # print(high)
+                # print(low)
 
-            print(high_data)
-            print(low_data)
-
-            exit()
+            # print(high_data)
+            # print(low_data)
+            #
+            # exit()
 
             pp_1, pp_2, pp_3, pp_4 = self.get_percentage_for_four_day_ago(df)
 
@@ -154,39 +165,77 @@ class Parser:
                 'EMA_100': ema_100,
                 'CLOSE_prev': np.array(df['Close'][-5:][4]),
                 'Percentage_1': pp_1,
+                'p1_Op_0,5_up': high_data[3][0],
+                'p1_0,5_1.0_up': high_data[3][1],
+                'p1_1,0_1,5_up': high_data[3][2],
+                'p1_1,5_2,0_up': high_data[3][3],
+                'p1_2,0_over_up': high_data[3][4],
+                'p1_Op_0,2_dwn': low_data[3][0],
+                'p1_0,2_0,3_dwn': low_data[3][1],
+                'p1_0,3_0,4_dwn': low_data[3][2],
+                'p1_0,4_0,5_dwn': low_data[3][3],
+                'p1_0,5_dwn,less': low_data[3][4],
                 'Percentage_2': pp_2,
+                'p2_Op_0,5_up': high_data[2][0],
+                'p2_0,5_1.0_up': high_data[2][1],
+                'p2_1,0_1,5_up': high_data[2][2],
+                'p2_1,5_2,0_up': high_data[2][3],
+                'p2_2,0_over_up': high_data[2][4],
+                'p2_Op_0,2_dwn': low_data[2][0],
+                'p2_0,2_0,3_dwn': low_data[2][1],
+                'p2_0,3_0,4_dwn': low_data[2][2],
+                'p2_0,4_0,5_dwn': low_data[2][3],
+                'p2_0,5_dwn,less': low_data[2][4],
                 'Percentage_3': pp_3,
+                'p3_Op_0,5_up': high_data[1][0],
+                'p3_0,5_1.0_up': high_data[1][1],
+                'p3_1,0_1,5_up': high_data[1][2],
+                'p3_1,5_2,0_up': high_data[1][3],
+                'p3_2,0_over_up': high_data[1][4],
+                'p3_Op_0,2_dwn': low_data[1][0],
+                'p3_0,2_0,3_dwn': low_data[1][1],
+                'p3_0,3_0,4_dwn': low_data[1][2],
+                'p3_0,4_0,5_dwn': low_data[1][3],
+                'p3_0,5_dwn,less': low_data[1][4],
                 'Percentage_4': pp_4,
+                'p4_Op_0,5_up': high_data[0][0],
+                'p4_0,5_1.0_up': high_data[0][1],
+                'p4_1,0_1,5_up': high_data[0][2],
+                'p4_1,5_2,0_up': high_data[0][3],
+                'p4_2,0_over_up': high_data[0][4],
+                'p4_Op_0,2_dwn': low_data[0][0],
+                'p4_0,2_0,3_dwn': low_data[0][1],
+                'p4_0,3_0,4_dwn': low_data[0][2],
+                'p4_0,4_0,5_dwn': low_data[0][3],
+                'p4_0,5_dwn,less': low_data[0][4],
                 'Exchange': name_stock_exchange
             }, ignore_index=True)
 
+            # data_ticker.to_excel('data_ticker.xlsx', index=True, header=True)
+            # exit()
+
         data_ticker.to_excel('data_ticker.xlsx', index=True, header=True)
 
-
-
-    def get_stock_intraday(self, open, interval, stock, ct, data, metadata):
-
-        data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
-
+    def get_stock_intraday(self, open, interval, index, data):
         high_data = []
         low_data = []
         is_date = True
-
-        count = ct
         is_date_count = 0
 
         while is_date:
-            last_current_date = (data.index[0] - timedelta(days=count)).date()
+            last_current_date = (data.index[0] - timedelta(days=index)).date()
             # current_date = str((pd.Timestamp.now() - timedelta(days=1)).date())
             result_data = data.loc[str(last_current_date):str(last_current_date)]
             if len(result_data) == 0:
-                count += 1
+                # count += 1
+                pass
             else:
-                print(result_data)
-                print(len(result_data))
-                print(result_data.index[0])
+                # print(result_data)
+                # print(len(result_data))
+                # print(result_data.index[0])
+                # print(last_current_date)
                 is_date_count += 1
-                count += 1
+                # count += 1
                 percent_2 = open + (open * .02)
                 percent_1_5 = open + (open * .015)
                 percent_1 = open + (open * .01)
@@ -225,13 +274,12 @@ class Parser:
                 percent_m_0_5_less = len(result_data.where(result_data['3. low'] < percent_m_0_5).dropna())
 
                 low_data = [open_percent_0_5, percent_0_5_percent_1, percent_1_percent_1_5, percent_1_5_percent_2,
-                        percent_2_over]
+                            percent_2_over]
                 high_data = [open_percent_m_0_2, percent_m_0_2_percent_m_0_3, percent_m_0_3_percent_m_0_4,
-                       percent_m_0_4_percent_m_0_5,
-                       percent_m_0_5_less]
+                             percent_m_0_4_percent_m_0_5,
+                             percent_m_0_5_less]
                 # high_data.append(high)
                 # low_data.append(low)
-
 
                 # print('high')
                 # print(open_percent_0_5, percent_0_5_percent_1, percent_1_percent_1_5, percent_1_5_percent_2,
