@@ -6,13 +6,15 @@ import os
 def main():
     parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage)
 
-    if not is_data_exist(config.NAME_DATA):
+    # file_name = f'{config.MIN_BUY}_{config.MAX_BUY}_{config.NAME_DATA}'
+
+    if is_data_exist(config.NAME_DATA):
         parser.search_relevant_ticker()
     else:
         parser.create_data_ticker_min_max_by_close()
         parser.search_relevant_ticker()
 
-    # parser.addition_main_data_ticker()
+    parser.addition_main_data_ticker()
 
 
 def is_data_exist(file_name):
@@ -20,8 +22,7 @@ def is_data_exist(file_name):
         for name in files:
             if name == file_name:
                 return True
-            else:
-                return False
+    return False
 
 
 if __name__ == '__main__':
