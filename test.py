@@ -37,7 +37,7 @@ def main():
 
     # open = [29.86, 29.79, 29.89, 29.55]
     for index, value in enumerate(open_data):
-        high, low = get_stock_intraday(ts=ts, open=value, interval=1, index=index, date=data)
+        high, low = get_stock_intraday(ts=ts, open=value, interval=2, index=index, date=data)
         print(high)
         print(low)
         high_data.append(high)

@@ -14,7 +14,7 @@ def main():
         parser.create_data_ticker_min_max_by_close()
         parser.search_relevant_ticker()
 
-    parser.addition_main_data_ticker()
+    # parser.addition_main_data_ticker()
 
 
 def is_data_exist(file_name):

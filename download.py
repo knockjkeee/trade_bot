@@ -146,14 +146,36 @@ class Parser:
 
             try:
                 data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
+                # print(data)
                 data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
+                # print(data.index)
                 high_data = []
                 low_data = []
 
+                # print(open_data)
+
+                over_count = 0
                 for index, value in enumerate(open_data):
-                    high, low = self.get_stock_intraday(open=value, interval=1, index=index, data=data)
-                    high_data.append(high)
-                    low_data.append(low)
+                    # print(value)
+                    # print(index)
+                    if index == 0:
+                        high, low, ind = self.get_stock_intraday(open=value, interval=1, index=index + over_count,
+                                                                 data=data)
+                        high_data.append(high)
+                        low_data.append(low)
+                        over_count = ind
+                    else:
+                        index = over_count
+                        # print(index)
+                        high, low, ind = self.get_stock_intraday(open=value, interval=1, index=index, data=data)
+
+                        high_data.append(high)
+                        low_data.append(low)
+                        over_count = ind
+                        # print(ind)
+
+                    # if ind == 3:
+                    #     over_count = ind
 
                 # print(high_data)
                 # print(low_data)
@@ -284,23 +306,31 @@ class Parser:
         data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
 
     def get_stock_intraday(self, open, interval, index, data):
+        # print('intro')
         high_data = []
         low_data = []
         is_date = True
         is_date_count = 0
 
+        # print(data)
+
         while is_date:
+            # print('while')
             last_current_date = (data.index[0] - timedelta(days=index)).date()
             # current_date = str((pd.Timestamp.now() - timedelta(days=1)).date())
             result_data = data.loc[str(last_current_date):str(last_current_date)]
             if len(result_data) == 0:
-                # count += 1
+                index += 1
+                # print(index)
+                # is_date_count += 1
                 pass
             else:
+                # print(index)
                 # print(result_data)
                 # print(len(result_data))
                 # print(result_data.index[0])
                 # print(last_current_date)
+
                 is_date_count += 1
                 # count += 1
                 percent_0_5, percent_1, percent_1_5, percent_2, percent_m_0_2, percent_m_0_3, percent_m_0_4, percent_m_0_5 = self.create_percent_group_of_open(
@@ -351,7 +381,10 @@ class Parser:
 
             if is_date_count == interval:
                 is_date = False
-        return high_data, low_data
+        index += 1
+        # print(high_data)
+        # print(low_data)
+        return high_data, low_data, index
 
     def create_metric_of_procent_group(self, open, percent_0_5, percent_1, percent_1_5, percent_2, percent_m_0_2,
                                        percent_m_0_3, percent_m_0_4, percent_m_0_5, result_data):
