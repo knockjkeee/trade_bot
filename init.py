@@ -6,7 +6,7 @@ import os
 def main():
     parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage)
 
-    # file_name = f'{config.MIN_BUY}_{config.MAX_BUY}_{config.NAME_DATA}'
+    file_name = f'{config.MIN_BUY}_{config.MAX_BUY}_{config.NAME_DATA}'
 
     if is_data_exist(config.NAME_DATA):
         parser.search_relevant_ticker()
