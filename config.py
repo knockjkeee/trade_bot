@@ -1,6 +1,6 @@
 COUNTRY = 'united states'
-MIN_BUY = 25
-MAX_BUY = 35
+MIN_BUY = 85
+MAX_BUY = 95
 NAME_DATA = 'data.xlsx'
 NAME_DATA_TICKER = 'data_ticker.xlsx'
 
