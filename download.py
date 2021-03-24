@@ -16,11 +16,12 @@ class Parser:
     provider ticker stocks exchange
     """
 
-    def __init__(self, country, min_buy, max_buy, config_a_vil):
+    def __init__(self, country, min_buy, max_buy, config_a_vil, bot):
         self.config_a_vil = config_a_vil
         self.max_buy = max_buy
         self.min_buy = min_buy
         self.country = country
+        self.bot = bot
 
         self.current_date = str(date.today().day) + '/' + \
                             str(date.today().month) + '/' + str(date.today().year)
@@ -130,19 +131,24 @@ class Parser:
                 print(f"ERROR load data {stock} of get tech idicator SMA EMA 100/20 ")
                 continue
 
-            print()
-            print(str(len(good_stocks) + 1) + ') ' + 'STOCK =', stock)
-            print(f'Tech sell indicators: to buy = {tech_buy} of 12;  to sell = {tech_sell} of 12')
-            print(f'SMA moving averages: to buy = {moving_sma_buy} of 6;  to sell = {moving_sma_sell} of 6')
-            print(f'EMA moving averages: to buy = {moving_ema_buy} of 6;  to sell = {moving_ema_sell} of 6')
-            print(f'SMA_20 = {sma_20} ; SMA_100 = {sma_100} ; EMA_20 = {ema_20} ; EMA_100 = {ema_100}')
-            print(
-                f"Prices Last Five days of  {stock} = {np.array(df['Close'][-5:][0])} ; {np.array(df['Close'][-5:][1])} ;"
-                f" {np.array(df['Close'][-5:][2])} ; {np.array(df['Close'][-5:][3])} ; {np.array(df['Close'][-5:][4])}")
+            try:
+                print()
+                print(str(len(good_stocks) + 1) + ') ' + 'STOCK =', stock)
+                print(f'Tech sell indicators: to buy = {tech_buy} of 12;  to sell = {tech_sell} of 12')
+                print(f'SMA moving averages: to buy = {moving_sma_buy} of 6;  to sell = {moving_sma_sell} of 6')
+                print(f'EMA moving averages: to buy = {moving_ema_buy} of 6;  to sell = {moving_ema_sell} of 6')
+                print(f'SMA_20 = {sma_20} ; SMA_100 = {sma_100} ; EMA_20 = {ema_20} ; EMA_100 = {ema_100}')
+                print(
+                    f"Prices Last Five days of  {stock} = {np.array(df['Close'][-5:][0])} ; {np.array(df['Close'][-5:][1])} ;"
+                    f" {np.array(df['Close'][-5:][2])} ; {np.array(df['Close'][-5:][3])} ; {np.array(df['Close'][-5:][4])}")
 
-            open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])),
-                         float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
-            time.sleep(1)
+                open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])),
+                             float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
+                time.sleep(1)
+            except:
+                print(f"ERROR print data {stock} of IndexError: index 4 is out of bounds for axis 0 with size 4 ")
+                continue
+
 
             try:
                 data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
@@ -456,6 +462,7 @@ class Parser:
             # exit()
 
         data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
+        # self.bot.send_message('167381172', f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
 
     def get_percentage_for_four_day_ago(self, df):
         p_1 = abs(1 - df['Close'][-5:][1] / df['Close'][-5:][0])

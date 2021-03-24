@@ -6,12 +6,18 @@ import pandas as pd
 import numpy as np
 
 
+
 # ts = TimeSeries(key=config.API_alpha_vantage, output_format='pandas')
 # data, meta_data = ts.get_intraday(symbol='T', interval='1min', outputsize='full')
 # data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
 
 
 def main():
+
+
+
+
+
     high_data = []
     low_data = []
     current_date = str(date.today().day) + '/' + \
@@ -25,8 +31,17 @@ def main():
         from_date = str(date.today().day) + '/' + \
                     str(date.today().month - 1) + '/' + str(date.today().year)
 
+    print(from_date)
+    print(current_date)
+    exit()
+
+
     df = investpy.get_stock_historical_data(
-        stock='ACNB', country=config.COUNTRY, from_date=from_date, to_date=current_date)
+        stock='FB', country=config.COUNTRY, from_date=from_date, to_date=current_date)
+
+    print(df)
+    exit()
+
 
     open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])),
                  float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
