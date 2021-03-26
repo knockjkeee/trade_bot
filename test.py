@@ -31,15 +31,15 @@ def main():
         from_date = str(date.today().day) + '/' + \
                     str(date.today().month - 1) + '/' + str(date.today().year)
 
-    print(from_date)
-    print(current_date)
-    exit()
+    # print(from_date)
+    # print(current_date)
+    # exit()
 
 
     df = investpy.get_stock_historical_data(
         stock='FB', country=config.COUNTRY, from_date=from_date, to_date=current_date)
 
-    print(df)
+    print(df['Close'][-1:])
     exit()
 
 

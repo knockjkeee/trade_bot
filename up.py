@@ -1,25 +1,15 @@
-"""
-This is a echo bot.
-It echoes any incoming text messages.
-"""
-
-
-import time
-from multiprocessing.pool import ThreadPool
+import os
 import logging
 import config
-from multiprocessing import  Process
+from multiprocessing import Process
 from aiogram import Bot, Dispatcher, executor, types
-
-API_TOKEN = 'BOT TOKEN HERE'
+from download import Parser
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-# Initialize bot and dispatcher
 bot = Bot(token=config.API_bot)
 dp = Dispatcher(bot)
-
 
 
 @dp.message_handler(commands=['start', 'help'])
@@ -27,8 +17,13 @@ async def send_welcome(message: types.Message):
     """
     This handler will be called when user sends `/start` or `/help` command
     """
-    await bot.send_message(config.ID_chat, "TEST!!!!!!")
+    # await bot.send_message(config.ID_chat, "TEST!!!!!!")
+    # await send("sda")
     await message.reply("Hi!\nI'm EchoBot!\nPowered by aiogram.")
+
+
+async def send(message):
+    await bot.send_message(config.ID_chat, message)
 
 
 @dp.message_handler(regexp='(^cat[s]?$|puss)')
@@ -55,25 +50,35 @@ async def echo(message: types.Message):
     await message.answer(message.text)
 
 
-
-def test_bots():
+def up_bot():
     executor.start_polling(dp, skip_updates=True)
 
-def get_bot():
-    bot.send_message(config.ID_chat, "TEST!!!!!!")
-    return bot
 
-def main():
-    p = Process(target=test_bots)
+def polling_bot():
+    p = Process(target=up_bot)
     p.start()
 
-    for i in range(100):
-        print(f'{i} iterble')
-        time.sleep(1)
+
+async def app():
+    parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage, config.NAME_DATA, bot)
+
+    # if is_data_exist(config.NAME_DATA):
+    #     parser.search_relevant_ticker()
+    # else:
+    #     parser.create_data_ticker_min_max_by_close()
+    #     parser.search_relevant_ticker()
+
+    await parser.addition_main_data_ticker()
+
+
+def is_data_exist(file_name):
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in files:
+            if name == file_name:
+                return True
+    return False
 
 
 if __name__ == '__main__':
-    # pool = ThreadPool(4)
-    # pool.map(test_bots)
-    main()
-
+    polling_bot()
+    app()

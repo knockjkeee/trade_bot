@@ -4,35 +4,42 @@ import pandas as pd
 from datetime import datetime, timedelta, date
 import time
 from alpha_vantage.timeseries import TimeSeries
+import yfinance as yf
 
 import requests
 from fake_useragent import UserAgent
 from lxml import html
 from tqdm import tqdm
 
+import config
+import logging
+
+logging.basicConfig(level=logging.ERROR)
 
 class Parser:
     """
     provider ticker stocks exchange
     """
 
-    def __init__(self, country, min_buy, max_buy, config_a_vil, bot):
+    def __init__(self, country, min_buy, max_buy, config_a_vil, file_name, bot):
         self.config_a_vil = config_a_vil
         self.max_buy = max_buy
         self.min_buy = min_buy
         self.country = country
         self.bot = bot
+        self.file_name = file_name
 
-        self.current_date = str(date.today().day) + '/' + \
-                            str(date.today().month) + '/' + str(date.today().year)
+        self.current_date = str(date.today().day) + '/' + str(date.today().month) + '/' + str(date.today().year)
+        self.current_date_y = str(date.today().year) + '-' + str(date.today().month) + '-' + str(date.today().day)
+
         a = date.today().month
 
         if a == 1:
-            self.from_date = str(date.today().day) + '/' + str(12) + \
-                             '/' + str(date.today().year - 1)
+            self.from_date = str(date.today().day) + '/' + str(12) + '/' + str(date.today().year - 1)
+            self.from_date_y = str(date.today().year - 1) + '-' + str(12) + '-' + str(date.today().day)
         else:
-            self.from_date = str(date.today().day) + '/' + \
-                             str(date.today().month - 1) + '/' + str(date.today().year)
+            self.from_date = str(date.today().day) + '/' + str(date.today().month - 1) + '/' + str(date.today().year)
+            self.from_date_y = str(date.today().year) + '-' + str(date.today().month - 1) + '-' + str(date.today().day)
 
         self.ts = TimeSeries(key=self.config_a_vil, output_format='pandas')
 
@@ -42,20 +49,22 @@ class Parser:
 
         for stock in tqdm(stocks, desc=f'create data tickers for all data {self.country} stocks exchange: '):
             try:
-                df = investpy.get_stock_historical_data(
-                    stock=stock, country=self.country, from_date=self.from_date, to_date=self.current_date)
+                # df = investpy.get_stock_historical_data(
+                #     stock=stock, country=self.country, from_date=self.from_date, to_date=self.current_date)
+                df = yf.download(tickers=stock, start=self.from_date_y, end=self.current_date_y)
                 data = data.append({
                     'TICKER': stock,
                     'CLOSE': df['Close'][-1]
                 }, ignore_index=True)
             except:
+                print()
+                print(f' {stock}, information unavailable or not found.')
                 continue
-                # print(f'stock: {stock}, information unavailable or not found.')
             # time.sleep(2)
-        data.to_excel('data.xlsx', index=True, header=True)
+        data.to_excel(self.file_name, index=True, header=True)
 
     def search_relevant_ticker(self):
-        data_stocks = pd.read_excel('data.xlsx', index_col=False)[['TICKER', 'CLOSE']]
+        data_stocks = pd.read_excel(self.file_name, index_col=False)[['TICKER', 'CLOSE']]
         stocks = data_stocks.where(
             (data_stocks['CLOSE'] >= self.min_buy) & (data_stocks['CLOSE'] <= self.max_buy)).dropna()
 
@@ -92,16 +101,19 @@ class Parser:
                 time.sleep(10)
                 counter = 0
             try:
-                df = investpy.get_stock_historical_data(
-                    stock=stock, country=self.country, from_date=self.from_date, to_date=self.current_date)
-                # stock='REZI', country=self.country, from_date=self.from_date, to_date=self.current_date)
-
-                time.sleep(5)
+                # df = investpy.get_stock_historical_data(
+                #     stock=stock, country=self.country, from_date=self.from_date, to_date=self.current_date)
+                # #stock='REZI', country=self.country, from_date=self.from_date, to_date=self.current_date)
+                # time.sleep(5)
+                time.sleep(2)
                 technical_indicators = investpy.technical.technical_indicators(
                     stock, self.country, 'stock', interval='daily')
                 country = self.country
+                time.sleep(1)
 
             except:
+                print()
+                print(f"ERROR load data {stock} of get investpy.technical.technical_indicators ")
                 continue
 
             # print(f'\ncurrent stock - {stock}')
@@ -109,6 +121,7 @@ class Parser:
             try:
                 tech_buy, tech_sell = self.get_tech_idicator_sell_buy(technical_indicators)
             except:
+                print()
                 print(f"ERROR load data {stock} of get tech idicator sell buy ")
                 continue
 
@@ -118,6 +131,7 @@ class Parser:
                 moving_averages, moving_sma_buy, moving_sma_sell = self.get_sma_sell_buy(country, stock)
                 moving_ema_buy, moving_ema_sell = self.get_ema_sell(moving_averages)
             except:
+                print()
                 print(f"ERROR load data {stock} of get tech idicator SMA EMA ")
                 continue
 
@@ -128,11 +142,19 @@ class Parser:
             try:
                 ema_100, ema_20, sma_100, sma_20 = self.get_sma_ema_20_100(moving_averages)
             except:
+                print()
                 print(f"ERROR load data {stock} of get tech idicator SMA EMA 100/20 ")
                 continue
 
             try:
                 print()
+                df = yf.download(tickers=stock, start=self.from_date_y, end=self.current_date_y)
+            except:
+                print(f"ERROR load data {stock} of get yfinance")
+                continue
+
+            try:
+                # print()
                 print(str(len(good_stocks) + 1) + ') ' + 'STOCK =', stock)
                 print(f'Tech sell indicators: to buy = {tech_buy} of 12;  to sell = {tech_sell} of 12')
                 print(f'SMA moving averages: to buy = {moving_sma_buy} of 6;  to sell = {moving_sma_sell} of 6')
@@ -146,9 +168,9 @@ class Parser:
                              float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
                 time.sleep(1)
             except:
+                print()
                 print(f"ERROR print data {stock} of IndexError: index 4 is out of bounds for axis 0 with size 4 ")
                 continue
-
 
             try:
                 data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
@@ -301,6 +323,7 @@ class Parser:
                 'Exchange': name_stock_exchange
             }, ignore_index=True)
             print(f'{stock} add to data...')
+            self.bot.send_message(config.ID_chat, f'{stock} add to data...')
             # index += 1
             counter += 1
             good_stocks.append(stock)
@@ -310,6 +333,7 @@ class Parser:
             # exit()
 
         data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
+        self.bot.send_message(config.ID_chat, f'parse is DONE!! size of good_stocks after tech analize = {len(good_stocks)}')
 
     def get_stock_intraday(self, open, interval, index, data):
         # print('intro')
@@ -437,8 +461,9 @@ class Parser:
         data = pd.read_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx')
         for name in tqdm(data['TICKER']):
             time.sleep(3)
-            df = investpy.get_stock_historical_data(
-                stock=name, country=self.country, from_date=self.from_date, to_date=self.current_date)
+            # df = investpy.get_stock_historical_data(
+            #     stock=name, country=self.country, from_date=self.from_date, to_date=self.current_date)
+            df = yf.download(tickers=name, start=self.from_date_y, end=self.current_date_y)
             cr_m = df.index[-1:].tolist()[0].month
             cr_d = df.index[-1:].tolist()[0].day
             cr_y = df.index[-1:].tolist()[0].year
@@ -458,11 +483,15 @@ class Parser:
                 print(f'ticker: {name} not available data')
                 continue
 
+        self.bot.send_message(config.ID_chat, f'addition_main_data_ticker  is DONE!!')
+
             # data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
             # exit()
 
         data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
+        # await self.bot.send_message(config.ID_chat, f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
         # self.bot.send_message('167381172', f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
+        # self.bot.process_new_updates(['\zx'])
 
     def get_percentage_for_four_day_ago(self, df):
         p_1 = abs(1 - df['Close'][-5:][1] / df['Close'][-5:][0])
