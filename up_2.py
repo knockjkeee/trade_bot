@@ -29,7 +29,7 @@ def send_collage(message):
     itembtn4 = telebot.types.KeyboardButton('/drop')
     markup.add(itembtn1, itembtn2, itembtn3, itembtn4)
     # markup.resize_keyboard()
-    bot_tg.send_message('167381172', "Choose one letter:", reply_markup=markup)
+    bot_tg.send_message('167381172', "Choose one function:", reply_markup=markup)
 
 
 @bot_tg.message_handler(commands=['start', 'help'])
@@ -97,6 +97,7 @@ def is_data_exist(file_name):
 
 def scrappy(bot):
     parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage, config.NAME_DATA, bot)
+
     if is_data_exist(config.NAME_DATA):
         parser.search_relevant_ticker()
     else:

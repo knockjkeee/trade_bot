@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, date
 import time
 from alpha_vantage.timeseries import TimeSeries
 import yfinance as yf
-
+import traceback
+from selenium import webdriver
 import requests
 from fake_useragent import UserAgent
 from lxml import html
@@ -15,6 +16,7 @@ import config
 import logging
 
 logging.basicConfig(level=logging.ERROR)
+
 
 class Parser:
     """
@@ -28,6 +30,9 @@ class Parser:
         self.country = country
         self.bot = bot
         self.file_name = file_name
+        op = webdriver.ChromeOptions()
+        op.add_argument('headless')
+        self.driver = webdriver.Chrome(options=op)
 
         self.current_date = str(date.today().day) + '/' + str(date.today().month) + '/' + str(date.today().year)
         self.current_date_y = str(date.today().year) + '-' + str(date.today().month) + '-' + str(date.today().day)
@@ -38,6 +43,7 @@ class Parser:
             self.from_date = str(date.today().day) + '/' + str(12) + '/' + str(date.today().year - 1)
             self.from_date_y = str(date.today().year - 1) + '-' + str(12) + '-' + str(date.today().day)
         else:
+            # TODO change  str(date.today().month - 2 to str(date.today().month - 1 or add check febr
             self.from_date = str(date.today().day) + '/' + str(date.today().month - 1) + '/' + str(date.today().year)
             self.from_date_y = str(date.today().year) + '-' + str(date.today().month - 1) + '-' + str(date.today().day)
 
@@ -70,25 +76,42 @@ class Parser:
 
         data_ticker = pd.DataFrame(columns=[
             'TICKER', 'Tech_buy', 'Tech_sell', 'SMA_buy', 'SMA_sell', 'SMA_20', 'SMA_100', 'EMA_buy', 'EMA_sell',
-            'EMA_20',
-            'EMA_100', 'CLOSE_prev',
+            'EMA_20', 'EMA_100',
             'Percentage_1', 'p1_Op_0,5_up', 'p1_0,5_1.0_up', 'p1_1,0_1,5_up', 'p1_1,5_2,0_up', 'p1_2,0_over_up',
             'p1_c_h_l_o_1', 'p1_c_mt_h_l_o_1', 'p1_c_h_l_o_2', 'p1_c_mt_h_l_o_2',
             'p1_Op_0,2_dwn', 'p1_0,2_0,3_dwn', 'p1_0,3_0,4_dwn', 'p1_0,4_0,5_dwn', 'p1_0,5_less_dwn', 'p1_c_l_h_o_1',
             'p1_c_mt_l_h_o_1', 'p1_c_l_h_o_2', 'p1_c_mt_l_h_o_2',
+            '1_CLOSE',
+            '1_Open_point',
+            '1_High_point',
+            '1_C-O',
+            '1_O-H',
             'Percentage_2', 'p2_Op_0,5_up', 'p2_0,5_1.0_up', 'p2_1,0_1,5_up', 'p2_1,5_2,0_up', 'p2_2,0_over_up',
             'p2_c_h_l_o_1', 'p2_c_mt_h_l_o_1', 'p2_c_h_l_o_2', 'p2_c_mt_h_l_o_2',
             'p2_Op_0,2_dwn', 'p2_0,2_0,3_dwn', 'p2_0,3_0,4_dwn', 'p2_0,4_0,5_dwn', 'p2_0,5_less_dwn', 'p2_c_l_h_o_1',
             'p2_c_mt_l_h_o_1', 'p2_c_l_h_o_2', 'p2_c_mt_l_h_o_2',
+            '2_CLOSE',
+            '2_Open_point',
+            '2_High_point',
+            '2_C-O',
+            '2_O-H',
             'Percentage_3', 'p3_Op_0,5_up', 'p3_0,5_1.0_up', 'p3_1,0_1,5_up', 'p3_1,5_2,0_up', 'p3_2,0_over_up',
             'p3_c_h_l_o_1', 'p3_c_mt_h_l_o_1', 'p3_c_h_l_o_2', 'p3_c_mt_h_l_o_2',
             'p3_Op_0,2_dwn', 'p3_0,2_0,3_dwn', 'p3_0,3_0,4_dwn', 'p3_0,4_0,5_dwn', 'p3_0,5_less_dwn', 'p3_c_l_h_o_1',
             'p3_c_mt_l_h_o_1', 'p3_c_l_h_o_2', 'p3_c_mt_l_h_o_2',
+            '3_CLOSE',
+            '3_Open_point',
+            '3_High_point',
+            '3_C-O',
+            '3_O-H',
             'Percentage_4', 'p4_Op_0,5_up', 'p4_0,5_1.0_up', 'p4_1,0_1,5_up', 'p4_1,5_2,0_up', 'p4_2,0_over_up',
             'p4_c_h_l_o_1', 'p4_c_mt_h_l_o_1', 'p4_c_h_l_o_2', 'p4_c_mt_h_l_o_2',
             'p4_Op_0,2_dwn', 'p4_0,2_0,3_dwn', 'p4_0,3_0,4_dwn', 'p4_0,4_0,5_dwn', 'p4_0,5_less_dwn', 'p4_c_l_h_o_1',
             'p4_c_mt_l_h_o_1', 'p4_c_l_h_o_2', 'p4_c_mt_l_h_o_2',
-            'Open_point', 'High_point', 'Exchange'
+            '4_CLOSE_prev',
+            '4_Open_point',
+            '4_High_point', 'Count_H_4', 'Count_L_4', 'Count_H_2', 'Count_L_2', 'Exchange', 'Yahoo_Rating', '4_C-O',
+            '4_O-H'
         ])
         counter = 0
         # index = 1
@@ -111,9 +134,10 @@ class Parser:
                 country = self.country
                 time.sleep(1)
 
-            except:
+            except Exception:
                 print()
                 print(f"ERROR load data {stock} of get investpy.technical.technical_indicators ")
+                traceback.print_exc()
                 continue
 
             # print(f'\ncurrent stock - {stock}')
@@ -173,9 +197,15 @@ class Parser:
                 continue
 
             try:
-                data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
+                # data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
+
+                data_y = yf.download(stock, self.from_date_y, self.current_date_y, interval='2m')
+
                 # print(data)
-                data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
+                # print(data_y)
+                # exit()
+
+                # data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
                 # print(data.index)
                 high_data = []
                 low_data = []
@@ -188,14 +218,14 @@ class Parser:
                     # print(index)
                     if index == 0:
                         high, low, ind = self.get_stock_intraday(open=value, interval=1, index=index + over_count,
-                                                                 data=data)
+                                                                 data=data_y)
                         high_data.append(high)
                         low_data.append(low)
                         over_count = ind
                     else:
                         index = over_count
                         # print(index)
-                        high, low, ind = self.get_stock_intraday(open=value, interval=1, index=index, data=data)
+                        high, low, ind = self.get_stock_intraday(open=value, interval=1, index=index, data=data_y)
 
                         high_data.append(high)
                         low_data.append(low)
@@ -209,9 +239,10 @@ class Parser:
                 # print(low_data)
                 # exit()
 
-            except:
+            except Exception:
                 print()
                 print(f"ERROR load data {stock} of alpha_vantage.timeseries ")
+                traceback.print_exc()
                 continue
 
             pp_1, pp_2, pp_3, pp_4 = self.get_percentage_for_four_day_ago(df)
@@ -221,10 +252,37 @@ class Parser:
 
             try:
                 name_stock_exchange = self.get_name_stock_exchange(stock)
-            except:
+            except Exception:
                 print()
                 print(f"ERROR load name {stock} exchange of investpy ")
+                traceback.print_exc()
                 continue
+
+
+            try:
+                yahoo_rating = self.get_rating_yh(stock)
+            except Exception:
+                print()
+                print(f"ERROR load name {stock} yahoo_rating")
+                traceback.print_exc()
+                continue
+            # print(high_data)
+            # print(low_data)
+            res_h_4 = sum(high_data[3][:4]) + sum(high_data[2][:4]) + sum(high_data[1][:4]) + sum(high_data[0][:4])
+            res_l_4 = sum(low_data[3][:4]) + sum(low_data[2][:4]) + sum(low_data[1][:4]) + sum(low_data[0][:4])
+
+            res_h_2 = sum(high_data[3][:4]) + sum(high_data[2][:4])
+            res_l_2 = sum(low_data[3][:4]) + sum(low_data[2][:4])
+
+            # res_l = sum(low_data[3][0]) + sum(low_data[3][1]) + sum(low_data[3][2]) + sum(low_data[3][3]) + sum(low_data[3][4])
+            # print(res_h)
+            # print(res_l)
+            # exit()
+
+            # print(df)
+            # print(np.array(df['Close'][-5:][4]))
+            # print(np.array(df['Close'][-5:][3]))
+            # exit()
 
             data_ticker = data_ticker.append({
                 'TICKER': stock,
@@ -238,7 +296,6 @@ class Parser:
                 'EMA_sell': moving_ema_sell,
                 'EMA_20': ema_20,
                 'EMA_100': ema_100,
-                'CLOSE_prev': np.array(df['Close'][-5:][4]),
 
                 'Percentage_1': pp_1,
                 'p1_Op_0,5_up': high_data[3][0],
@@ -259,6 +316,9 @@ class Parser:
                 'p1_c_mt_l_h_o_1': low_data[3][6],
                 'p1_c_l_h_o_2': low_data[3][7],
                 'p1_c_mt_l_h_o_2': low_data[3][8],
+                '1_CLOSE': np.array(df['Close'][-5:][1]),
+                '1_Open_point': np.array(df['Open'][-5:][1]),
+                '1_High_point': np.array(df['High'][-5:][1]),
 
                 'Percentage_2': pp_2,
                 'p2_Op_0,5_up': high_data[2][0],
@@ -279,6 +339,9 @@ class Parser:
                 'p2_c_mt_l_h_o_1': low_data[2][6],
                 'p2_c_l_h_o_2': low_data[2][7],
                 'p2_c_mt_l_h_o_2': low_data[2][8],
+                '2_CLOSE': np.array(df['Close'][-5:][2]),
+                '2_Open_point': np.array(df['Open'][-5:][2]),
+                '2_High_point': np.array(df['High'][-5:][2]),
 
                 'Percentage_3': pp_3,
                 'p3_Op_0,5_up': high_data[1][0],
@@ -299,6 +362,9 @@ class Parser:
                 'p3_c_mt_l_h_o_1': low_data[1][6],
                 'p3_c_l_h_o_2': low_data[1][7],
                 'p3_c_mt_l_h_o_2': low_data[1][8],
+                '3_CLOSE': np.array(df['Close'][-5:][3]),
+                '3_Open_point': np.array(df['Open'][-5:][3]),
+                '3_High_point': np.array(df['High'][-5:][3]),
 
                 'Percentage_4': pp_4,
                 'p4_Op_0,5_up': high_data[0][0],
@@ -319,21 +385,32 @@ class Parser:
                 'p4_c_mt_l_h_o_1': low_data[0][6],
                 'p4_c_l_h_o_2': low_data[0][7],
                 'p4_c_mt_l_h_o_2': low_data[0][8],
+                '4_CLOSE_prev': np.array(df['Close'][-5:][4]),
 
-                'Exchange': name_stock_exchange
+                'Count_H_4': res_h_4,
+                'Count_L_4': res_l_4,
+
+                'Count_H_2': res_h_2,
+                'Count_L_2': res_l_2,
+
+                'Exchange': name_stock_exchange,
+                'Yahoo_Rating': yahoo_rating
+
             }, ignore_index=True)
             print(f'{stock} add to data...')
-            self.bot.send_message(config.ID_chat, f'{stock} add to data...')
             # index += 1
             counter += 1
             good_stocks.append(stock)
+            # self.bot.send_message(config.ID_chat, f'{len(good_stocks)}) {stock} add to data...')
             time.sleep(1)
 
             # data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
             # exit()
 
         data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
-        self.bot.send_message(config.ID_chat, f'parse is DONE!! size of good_stocks after tech analize = {len(good_stocks)}')
+        self.bot.send_message(config.ID_chat,
+                              f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(good_stocks)}')
+        self.driver.close()
 
     def get_stock_intraday(self, open, interval, index, data):
         # print('intro')
@@ -346,7 +423,8 @@ class Parser:
 
         while is_date:
             # print('while')
-            last_current_date = (data.index[0] - timedelta(days=index)).date()
+            # last_current_date = (data.index[0] - timedelta(days=index)).date()
+            last_current_date = (data.index[-1] - timedelta(days=index)).date()
             # current_date = str((pd.Timestamp.now() - timedelta(days=1)).date())
             result_data = data.loc[str(last_current_date):str(last_current_date)]
             if len(result_data) == 0:
@@ -357,7 +435,7 @@ class Parser:
             else:
                 # print(index)
                 # print(result_data)
-                # print(len(result_data))
+                # # print(len(result_data))
                 # print(result_data.index[0])
                 # print(last_current_date)
 
@@ -366,8 +444,17 @@ class Parser:
                 percent_0_5, percent_1, percent_1_5, percent_2, percent_m_0_2, percent_m_0_3, percent_m_0_4, percent_m_0_5 = self.create_percent_group_of_open(
                     open)
 
-                array_h = np.array(result_data['2. high'])[::-1]
-                array_l = np.array(result_data['3. low'])[::-1]
+                # print(result_data)
+                # exit()
+
+                # array_h = np.array(result_data['2. high'])[::-1]
+                array_h = np.array(result_data['High'])
+                # array_h = np.array(result_data['4. close'])[::-1]
+                # array_l = np.array(result_data['3. low'])[::-1]
+                array_l = np.array(result_data['Low'])
+
+                # print(array_h)
+                # print(array_l)
 
                 count_many_tick_h_l_over_2, count_many_tick_l_h_over_2 = self.get_many_tick_height_low___low_height(
                     array_h,
@@ -412,38 +499,50 @@ class Parser:
             if is_date_count == interval:
                 is_date = False
         index += 1
+
         # print(high_data)
         # print(low_data)
+
         return high_data, low_data, index
 
     def create_metric_of_procent_group(self, open, percent_0_5, percent_1, percent_1_5, percent_2, percent_m_0_2,
                                        percent_m_0_3, percent_m_0_4, percent_m_0_5, result_data):
         open_percent_0_5 = len(
             result_data.where(
-                (result_data['2. high'] > open) & (result_data['2. high'] <= percent_0_5)).dropna())
+                # (result_data['2. high'] > open) & (result_data['2. high'] <= percent_0_5)).dropna())
+                (result_data['High'] > open) & (result_data['High'] <= percent_0_5)).dropna())
         percent_0_5_percent_1 = len(
             result_data.where(
-                (result_data['2. high'] > percent_0_5) & (result_data['2. high'] <= percent_1)).dropna())
+                # (result_data['2. high'] > percent_0_5) & (result_data['2. high'] <= percent_1)).dropna())
+                (result_data['High'] > percent_0_5) & (result_data['High'] <= percent_1)).dropna())
         percent_1_percent_1_5 = len(
             result_data.where(
-                (result_data['2. high'] > percent_1) & (result_data['2. high'] <= percent_1_5)).dropna())
+                # (result_data['2. high'] > percent_1) & (result_data['2. high'] <= percent_1_5)).dropna())
+                (result_data['High'] > percent_1) & (result_data['High'] <= percent_1_5)).dropna())
         percent_1_5_percent_2 = len(
             result_data.where(
-                (result_data['2. high'] > percent_1_5) & (result_data['2. high'] <= percent_2)).dropna())
-        percent_2_over = len(result_data.where(result_data['2. high'] > percent_2).dropna())
+                # (result_data['2. high'] > percent_1_5) & (result_data['2. high'] <= percent_2)).dropna())
+                (result_data['High'] > percent_1_5) & (result_data['High'] <= percent_2)).dropna())
+        # percent_2_over = len(result_data.where(result_data['2. high'] > percent_2).dropna())
+        percent_2_over = len(result_data.where(result_data['High'] > percent_2).dropna())
         open_percent_m_0_2 = len(
             result_data.where(
-                (result_data['3. low'] < open) & (result_data['3. low'] >= percent_m_0_2)).dropna())
+                # (result_data['3. low'] < open) & (result_data['3. low'] >= percent_m_0_2)).dropna())
+                (result_data['Low'] < open) & (result_data['Low'] >= percent_m_0_2)).dropna())
         percent_m_0_2_percent_m_0_3 = len(
             result_data.where(
-                (result_data['3. low'] < percent_m_0_2) & (result_data['3. low'] >= percent_m_0_3)).dropna())
+                # (result_data['3. low'] < percent_m_0_2) & (result_data['3. low'] >= percent_m_0_3)).dropna())
+                (result_data['Low'] < percent_m_0_2) & (result_data['Low'] >= percent_m_0_3)).dropna())
         percent_m_0_3_percent_m_0_4 = len(
             result_data.where(
-                (result_data['3. low'] < percent_m_0_3) & (result_data['3. low'] >= percent_m_0_4)).dropna())
+                # (result_data['3. low'] < percent_m_0_3) & (result_data['3. low'] >= percent_m_0_4)).dropna())
+                (result_data['Low'] < percent_m_0_3) & (result_data['Low'] >= percent_m_0_4)).dropna())
         percent_m_0_4_percent_m_0_5 = len(
             result_data.where(
-                (result_data['3. low'] < percent_m_0_4) & (result_data['3. low'] >= percent_m_0_5)).dropna())
-        percent_m_0_5_less = len(result_data.where(result_data['3. low'] < percent_m_0_5).dropna())
+                # (result_data['3. low'] < percent_m_0_4) & (result_data['3. low'] >= percent_m_0_5)).dropna())
+                (result_data['Low'] < percent_m_0_4) & (result_data['Low'] >= percent_m_0_5)).dropna())
+        # percent_m_0_5_less = len(result_data.where(result_data['3. low'] < percent_m_0_5).dropna())
+        percent_m_0_5_less = len(result_data.where(result_data['Low'] < percent_m_0_5).dropna())
         return open_percent_0_5, open_percent_m_0_2, percent_0_5_percent_1, percent_1_5_percent_2, percent_1_percent_1_5, percent_2_over, percent_m_0_2_percent_m_0_3, percent_m_0_3_percent_m_0_4, percent_m_0_4_percent_m_0_5, percent_m_0_5_less
 
     def create_percent_group_of_open(self, open):
@@ -463,6 +562,9 @@ class Parser:
             time.sleep(3)
             # df = investpy.get_stock_historical_data(
             #     stock=name, country=self.country, from_date=self.from_date, to_date=self.current_date)
+            # print(self.from_date_y)
+            # print(self.current_date_y)
+
             df = yf.download(tickers=name, start=self.from_date_y, end=self.current_date_y)
             cr_m = df.index[-1:].tolist()[0].month
             cr_d = df.index[-1:].tolist()[0].day
@@ -474,9 +576,9 @@ class Parser:
                 if self.current_date == current_d:
                     pass
                 else:
-                    data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], 'Open_point'] = np.array(
+                    data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], '4_Open_point'] = np.array(
                         df['Open'][-5:][4])
-                    data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], 'High_point'] = np.array(
+                    data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], '4_High_point'] = np.array(
                         df['High'][-5:][4])
             except:
                 print()
@@ -485,8 +587,8 @@ class Parser:
 
         self.bot.send_message(config.ID_chat, f'addition_main_data_ticker  is DONE!!')
 
-            # data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
-            # exit()
+        # data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
+        # exit()
 
         data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
         # await self.bot.send_message(config.ID_chat, f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
@@ -517,15 +619,28 @@ class Parser:
         return pp_1, pp_2, pp_3, pp_4
 
     def get_name_stock_exchange(self, stock):
-        time.sleep(1)
+        # time.sleep(1)
         ua = UserAgent()
         headers = {'User-Agent': str(ua.chrome)}
         url_ticker = investpy.get_stock_company_profile(stock, self.country)['url']
-        time.sleep(3)
+        time.sleep(1)
         r = requests.get(url_ticker, headers=headers)
         tree = html.fromstring(r.content)
         name_stock_exchange = tree.xpath('//*[@id="DropdownBtn"]/i/text()')[0]
         return name_stock_exchange
+
+    def get_rating_yh(self, stock):
+        self.driver.delete_all_cookies()
+        # op = webdriver.ChromeOptions()
+        # op.add_argument('headless')
+        # driver = webdriver.Chrome(options=op)
+        self.driver.get(f'https://finance.yahoo.com/quote/{stock}/analysis?p={stock}')
+        time.sleep(1)
+        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        element = self.driver.find_element_by_xpath('//*[@id="Col2-4-QuoteModule-Proxy"]/div/section/div/div/div[1]')
+        # driver.close()
+
+        return element.text
 
     def get_sma_ema_20_100(self, moving_averages):
         sma_20 = moving_averages['sma_signal'][2]
