@@ -11,7 +11,10 @@ from download import Parser
 
 bot_tg = telebot.TeleBot(config.API_bot)
 
+# good = []
+
 DIROS = ["one", "two", "free"]
+parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage, config.NAME_DATA, bot_tg)
 
 
 def listener(messages):
@@ -27,9 +30,18 @@ def send_collage(message):
     itembtn2 = telebot.types.KeyboardButton('/dir')
     itembtn3 = telebot.types.KeyboardButton('/append')
     itembtn4 = telebot.types.KeyboardButton('/drop')
-    markup.add(itembtn1, itembtn2, itembtn3, itembtn4)
+    itembtn5 = telebot.types.KeyboardButton('/good')
+    markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5)
     # markup.resize_keyboard()
     bot_tg.send_message('167381172', "Choose one function:", reply_markup=markup)
+
+
+# @bot_tg.message_handler(func=lambda message: True)
+# def echo_message(message):
+#     bot_tg.reply_to(message, '''
+#         check menu -> /menu
+#     '''
+#       )
 
 
 @bot_tg.message_handler(commands=['start', 'help'])
@@ -52,8 +64,15 @@ def drop_data(message):
     bot_tg.send_message(config.ID_chat, str(data))
 
 
+@bot_tg.message_handler(commands=['good'])
+def drop_data(message):
+    # del DIROS[-1]
+    stocks = parser.get_good_stocks()
+    bot_tg.send_message(config.ID_chat, str(stocks))
+
+
 @bot_tg.message_handler(commands=['append'])
-def append_data(message):
+def good_stocks(message):
     data = append_random_data(DIROS)
     bot_tg.send_message(config.ID_chat, str(data))
 
@@ -96,14 +115,12 @@ def is_data_exist(file_name):
 
 
 def scrappy(bot):
-    parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage, config.NAME_DATA, bot)
-
     if is_data_exist(config.NAME_DATA):
-        parser.search_relevant_ticker()
+        for stock in parser.search_relevant_ticker():
+            DIROS.append(stock)
     else:
         parser.create_data_ticker_min_max_by_close()
         parser.search_relevant_ticker()
-
     # parser.addition_main_data_ticker()
 
 

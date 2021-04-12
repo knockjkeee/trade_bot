@@ -17,7 +17,6 @@ import logging
 
 logging.basicConfig(level=logging.ERROR)
 
-
 class Parser:
     """
     provider ticker stocks exchange
@@ -33,6 +32,8 @@ class Parser:
         op = webdriver.ChromeOptions()
         op.add_argument('headless')
         self.driver = webdriver.Chrome(options=op)
+
+        self.good_stocks = []
 
         self.current_date = str(date.today().day) + '/' + str(date.today().month) + '/' + str(date.today().year)
         self.current_date_y = str(date.today().year) + '-' + str(date.today().month) + '-' + str(date.today().day)
@@ -115,7 +116,7 @@ class Parser:
         ])
         counter = 0
         # index = 1
-        good_stocks = []
+        # good_stocks = []
 
         for stock in tqdm(stocks['TICKER'], desc=f'search relevant ticker by tech analise of data tickers where close '
                                                  f'price {self.min_buy} vs {self.max_buy}: '):
@@ -130,10 +131,12 @@ class Parser:
                 # time.sleep(5)
                 time.sleep(2)
                 technical_indicators = investpy.technical.technical_indicators(
+                # technical_indicators = investpy.technical_indicators(
                     stock, self.country, 'stock', interval='daily')
                 country = self.country
                 time.sleep(1)
-
+                # print(technical_indicators)
+                # investpy.technical_indicators()
             except Exception:
                 print()
                 print(f"ERROR load data {stock} of get investpy.technical.technical_indicators ")
@@ -144,9 +147,10 @@ class Parser:
 
             try:
                 tech_buy, tech_sell = self.get_tech_idicator_sell_buy(technical_indicators)
-            except:
+            except Exception:
                 print()
                 print(f"ERROR load data {stock} of get tech idicator sell buy ")
+                traceback.print_exc()
                 continue
 
             time.sleep(2)
@@ -179,7 +183,7 @@ class Parser:
 
             try:
                 # print()
-                print(str(len(good_stocks) + 1) + ') ' + 'STOCK =', stock)
+                print(str(len(self.good_stocks) + 1) + ') ' + 'STOCK =', stock)
                 print(f'Tech sell indicators: to buy = {tech_buy} of 12;  to sell = {tech_sell} of 12')
                 print(f'SMA moving averages: to buy = {moving_sma_buy} of 6;  to sell = {moving_sma_sell} of 6')
                 print(f'EMA moving averages: to buy = {moving_ema_buy} of 6;  to sell = {moving_ema_sell} of 6')
@@ -400,17 +404,22 @@ class Parser:
             print(f'{stock} add to data...')
             # index += 1
             counter += 1
-            good_stocks.append(stock)
+            self.good_stocks.append(stock)
             # self.bot.send_message(config.ID_chat, f'{len(good_stocks)}) {stock} add to data...')
             time.sleep(1)
 
             # data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
             # exit()
-
+            yield stock
         data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
         self.bot.send_message(config.ID_chat,
-                              f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(good_stocks)}')
+                              f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
         self.driver.close()
+
+
+    def get_good_stocks(self):
+        return self.good_stocks
+
 
     def get_stock_intraday(self, open, interval, index, data):
         # print('intro')
