@@ -17,6 +17,7 @@ import logging
 
 logging.basicConfig(level=logging.ERROR)
 
+
 class Parser:
     """
     provider ticker stocks exchange
@@ -111,8 +112,10 @@ class Parser:
             'p4_c_mt_l_h_o_1', 'p4_c_l_h_o_2', 'p4_c_mt_l_h_o_2',
             '4_CLOSE_prev',
             '4_Open_point',
-            '4_High_point', 'Count_H_4', 'Count_L_4', 'Count_H_2', 'Count_L_2', 'Exchange', 'Yahoo_Rating', '4_C-O',
-            '4_O-H'
+            '4_High_point', 'Count_H_4', 'Count_L_4', 'Count_H_2', 'Count_L_2', 'Exchange',
+            'Yahoo_Rating', 'Yahoo_Rating_Key', 'regVolume', 'avgVolume',
+            'quickRatio', 'currentRatio', 'pegRatio', 'shortRatio', 'payoutRatio',
+            '4_C-O', '4_O-H'
         ])
         counter = 0
         # index = 1
@@ -131,7 +134,7 @@ class Parser:
                 # time.sleep(5)
                 time.sleep(2)
                 technical_indicators = investpy.technical.technical_indicators(
-                # technical_indicators = investpy.technical_indicators(
+                    # technical_indicators = investpy.technical_indicators(
                     stock, self.country, 'stock', interval='daily')
                 country = self.country
                 time.sleep(1)
@@ -262,9 +265,12 @@ class Parser:
                 traceback.print_exc()
                 continue
 
-
             try:
-                yahoo_rating = self.get_rating_yh(stock)
+                regularMarketVolume, averageVolume10days, recommendationMean, recommendationKey, quickRatio, currentRatio, pegRatio, shortRatio, payoutRatio = self.get_info_yh(
+                    stock)
+
+
+
             except Exception:
                 print()
                 print(f"ERROR load name {stock} yahoo_rating")
@@ -398,7 +404,18 @@ class Parser:
                 'Count_L_2': res_l_2,
 
                 'Exchange': name_stock_exchange,
-                'Yahoo_Rating': yahoo_rating
+                # 'Yahoo_Rating': yahoo_rating
+
+                'Yahoo_Rating': recommendationMean,
+                'Yahoo_Rating_Key': recommendationKey,
+                'regVolume': regularMarketVolume,
+                'avgVolume': averageVolume10days,
+
+                'quickRatio': quickRatio,
+                'currentRatio': currentRatio,
+                'pegRatio': pegRatio,
+                'shortRatio': shortRatio,
+                'payoutRatio': payoutRatio
 
             }, ignore_index=True)
             print(f'{stock} add to data...')
@@ -416,10 +433,8 @@ class Parser:
                               f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
         self.driver.close()
 
-
     def get_good_stocks(self):
         return self.good_stocks
-
 
     def get_stock_intraday(self, open, interval, index, data):
         # print('intro')
@@ -638,7 +653,22 @@ class Parser:
         name_stock_exchange = tree.xpath('//*[@id="DropdownBtn"]/i/text()')[0]
         return name_stock_exchange
 
-    def get_rating_yh(self, stock):
+    def get_info_yh(self, stock):
+        ticker = yf.Ticker(stock)
+        regularMarketVolume = ticker.info["regularMarketVolume"]
+        averageVolume10days = ticker.info["averageVolume10days"]
+        recommendationMean = ticker.info["recommendationMean"]
+        recommendationKey = ticker.info["recommendationKey"]
+
+        quickRatio = ticker.info["quickRatio"]
+        currentRatio = ticker.info["currentRatio"]
+        pegRatio = ticker.info["pegRatio"]
+        shortRatio = ticker.info["shortRatio"]
+        payoutRatio = ticker.info["payoutRatio"]
+
+        return regularMarketVolume, averageVolume10days, recommendationMean, recommendationKey, \
+               quickRatio, currentRatio, pegRatio, shortRatio, payoutRatio
+
         self.driver.delete_all_cookies()
         # op = webdriver.ChromeOptions()
         # op.add_argument('headless')
