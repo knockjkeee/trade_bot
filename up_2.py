@@ -53,13 +53,15 @@ def send_welcome(message):
 
 @bot_tg.message_handler(commands=['dir'])
 def get_data(message):
-    data = get__data(DIROS)
-    bot_tg.send_message(config.ID_chat, str(data))
+    global DIROS
+    # data = get__data(DIROS)
+    bot_tg.send_message(config.ID_chat, str(DIROS))
 
 
 @bot_tg.message_handler(commands=['drop'])
 def drop_data(message):
     # del DIROS[-1]
+    global DIROS
     data = dr_data(DIROS)
     bot_tg.send_message(config.ID_chat, str(data))
 
@@ -73,6 +75,7 @@ def drop_data(message):
 
 @bot_tg.message_handler(commands=['append'])
 def good_stocks(message):
+    global DIROS
     data = append_random_data(DIROS)
     bot_tg.send_message(config.ID_chat, str(data))
 
@@ -115,9 +118,13 @@ def is_data_exist(file_name):
 
 
 def scrappy(bot):
+    global DIROS
     if is_data_exist(config.NAME_DATA):
         for stock in parser.search_relevant_ticker():
+            print(DIROS)
             DIROS.append(stock)
+            print(f'diiiir:  {stock}')
+            # print(DIROS)
     else:
         parser.create_data_ticker_min_max_by_close()
         parser.search_relevant_ticker()

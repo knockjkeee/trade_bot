@@ -15,24 +15,32 @@ from tqdm import tqdm
 import config
 import logging
 
+from logger_bot import TGBOT
+
 logging.basicConfig(level=logging.ERROR)
 
 
-class Parser:
+class Parser(object):
     """
     provider ticker stocks exchange
     """
 
     def __init__(self, country, min_buy, max_buy, config_a_vil, file_name, bot):
+        # self.data = data
         self.config_a_vil = config_a_vil
         self.max_buy = max_buy
         self.min_buy = min_buy
         self.country = country
         self.bot = bot
+
+        # print(self.bot)
+
+        # self.bot.wl('asdasdas')
+
         self.file_name = file_name
-        op = webdriver.ChromeOptions()
-        op.add_argument('headless')
-        self.driver = webdriver.Chrome(options=op)
+        # op = webdriver.ChromeOptions()
+        # op.add_argument('headless')
+        # self.driver = webdriver.Chrome(options=op)
 
         self.good_stocks = []
 
@@ -79,51 +87,122 @@ class Parser:
         data_ticker = pd.DataFrame(columns=[
             'TICKER', 'Tech_buy', 'Tech_sell', 'SMA_buy', 'SMA_sell', 'SMA_20', 'SMA_100', 'EMA_buy', 'EMA_sell',
             'EMA_20', 'EMA_100',
-            'Percentage_1', 'p1_Op_0,5_up', 'p1_0,5_1.0_up', 'p1_1,0_1,5_up', 'p1_1,5_2,0_up', 'p1_2,0_over_up',
+            'p1_Op_0,5_up', 'p1_0,5_1.0_up', 'p1_1,0_1,5_up', 'p1_1,5_2,0_up', 'p1_2,0_over_up',
             'p1_c_h_l_o_1', 'p1_c_mt_h_l_o_1', 'p1_c_h_l_o_2', 'p1_c_mt_h_l_o_2',
             'p1_Op_0,2_dwn', 'p1_0,2_0,3_dwn', 'p1_0,3_0,4_dwn', 'p1_0,4_0,5_dwn', 'p1_0,5_less_dwn', 'p1_c_l_h_o_1',
             'p1_c_mt_l_h_o_1', 'p1_c_l_h_o_2', 'p1_c_mt_l_h_o_2',
-            '1_CLOSE',
+            'p1_c_mt_h_l_m_05___1', 'p1_c_mt_h_l_m_05___1_5',
+            'p1_c_mt_l_h_m_05___1', 'p1_c_mt_l_h_m_05___1_5',
+            'p1_c_h_l_m_05___1', 'p1_c_h_l_m_05___1_5',
+            'p1_c_l_h_m_05___1', 'p1_c_l_h_m_05___1_5',
+            'p1_c_mt_h_l_m_1___1', 'p1_c_mt_h_l_m_1___1_5',
+            'p1_c_mt_l_h_m_1___1', 'p1_c_mt_l_h_m_1___1_5',
+            'p1_c_h_l_m_1___1', 'p1_c_h_l_m_1___1_5',
+            'p1_c_l_h_m_1___1', 'p1_c_l_h_m_1___1_5',
+            'Percentage_1',
+            '1_CLOSE_prev',
             '1_Open_point',
             '1_High_point',
+            '1_Low_point',
+            '1_Close_point',
             '1_C-O',
             '1_O-H',
-            'Percentage_2', 'p2_Op_0,5_up', 'p2_0,5_1.0_up', 'p2_1,0_1,5_up', 'p2_1,5_2,0_up', 'p2_2,0_over_up',
+            '1_O-L',
+            '1_L-C',
+
+            'p2_Op_0,5_up', 'p2_0,5_1.0_up', 'p2_1,0_1,5_up', 'p2_1,5_2,0_up', 'p2_2,0_over_up',
             'p2_c_h_l_o_1', 'p2_c_mt_h_l_o_1', 'p2_c_h_l_o_2', 'p2_c_mt_h_l_o_2',
             'p2_Op_0,2_dwn', 'p2_0,2_0,3_dwn', 'p2_0,3_0,4_dwn', 'p2_0,4_0,5_dwn', 'p2_0,5_less_dwn', 'p2_c_l_h_o_1',
             'p2_c_mt_l_h_o_1', 'p2_c_l_h_o_2', 'p2_c_mt_l_h_o_2',
-            '2_CLOSE',
+            'p2_c_mt_h_l_m_05___1', 'p2_c_mt_h_l_m_05___1_5',
+            'p2_c_mt_l_h_m_05___1', 'p2_c_mt_l_h_m_05___1_5',
+            'p2_c_h_l_m_05___1', 'p2_c_h_l_m_05___1_5',
+            'p2_c_l_h_m_05___1', 'p2_c_l_h_m_05___1_5',
+            'p2_c_mt_h_l_m_1___1', 'p2_c_mt_h_l_m_1___1_5',
+            'p2_c_mt_l_h_m_1___1', 'p2_c_mt_l_h_m_1___1_5',
+            'p2_c_h_l_m_1___1', 'p2_c_h_l_m_1___1_5',
+            'p2_c_l_h_m_1___1', 'p2_c_l_h_m_1___1_5',
+
+            'Percentage_2',
+            '2_CLOSE_prev',
             '2_Open_point',
             '2_High_point',
+            '2_Low_point',
+            '2_Close_point',
             '2_C-O',
             '2_O-H',
-            'Percentage_3', 'p3_Op_0,5_up', 'p3_0,5_1.0_up', 'p3_1,0_1,5_up', 'p3_1,5_2,0_up', 'p3_2,0_over_up',
+            '2_O-L',
+            '2_L-C',
+
+            'p3_Op_0,5_up', 'p3_0,5_1.0_up', 'p3_1,0_1,5_up', 'p3_1,5_2,0_up', 'p3_2,0_over_up',
             'p3_c_h_l_o_1', 'p3_c_mt_h_l_o_1', 'p3_c_h_l_o_2', 'p3_c_mt_h_l_o_2',
             'p3_Op_0,2_dwn', 'p3_0,2_0,3_dwn', 'p3_0,3_0,4_dwn', 'p3_0,4_0,5_dwn', 'p3_0,5_less_dwn', 'p3_c_l_h_o_1',
             'p3_c_mt_l_h_o_1', 'p3_c_l_h_o_2', 'p3_c_mt_l_h_o_2',
-            '3_CLOSE',
+            'p3_c_mt_h_l_m_05___1', 'p3_c_mt_h_l_m_05___1_5',
+            'p3_c_mt_l_h_m_05___1', 'p3_c_mt_l_h_m_05___1_5',
+            'p3_c_h_l_m_05___1', 'p3_c_h_l_m_05___1_5',
+            'p3_c_l_h_m_05___1', 'p3_c_l_h_m_05___1_5',
+            'p3_c_mt_h_l_m_1___1', 'p3_c_mt_h_l_m_1___1_5',
+            'p3_c_mt_l_h_m_1___1', 'p3_c_mt_l_h_m_1___1_5',
+            'p3_c_h_l_m_1___1', 'p3_c_h_l_m_1___1_5',
+            'p3_c_l_h_m_1___1', 'p3_c_l_h_m_1___1_5',
+            'Percentage_3',
+            '3_CLOSE_prev',
             '3_Open_point',
             '3_High_point',
+            '3_Low_point',
+            '3_Close_point',
             '3_C-O',
             '3_O-H',
-            'Percentage_4', 'p4_Op_0,5_up', 'p4_0,5_1.0_up', 'p4_1,0_1,5_up', 'p4_1,5_2,0_up', 'p4_2,0_over_up',
+            '3_O-L',
+            '3_L-C',
+
+            'p4_Op_0,5_up', 'p4_0,5_1.0_up', 'p4_1,0_1,5_up', 'p4_1,5_2,0_up', 'p4_2,0_over_up',
             'p4_c_h_l_o_1', 'p4_c_mt_h_l_o_1', 'p4_c_h_l_o_2', 'p4_c_mt_h_l_o_2',
             'p4_Op_0,2_dwn', 'p4_0,2_0,3_dwn', 'p4_0,3_0,4_dwn', 'p4_0,4_0,5_dwn', 'p4_0,5_less_dwn', 'p4_c_l_h_o_1',
             'p4_c_mt_l_h_o_1', 'p4_c_l_h_o_2', 'p4_c_mt_l_h_o_2',
+            'p4_c_mt_h_l_m_05___1', 'p4_c_mt_h_l_m_05___1_5',
+            'p4_c_mt_l_h_m_05___1', 'p4_c_mt_l_h_m_05___1_5',
+            'p4_c_h_l_m_05___1', 'p4_c_h_l_m_05___1_5',
+            'p4_c_l_h_m_05___1', 'p4_c_l_h_m_05___1_5',
+            'p4_c_mt_h_l_m_1___1', 'p4_c_mt_h_l_m_1___1_5',
+            'p4_c_mt_l_h_m_1___1', 'p4_c_mt_l_h_m_1___1_5',
+            'p4_c_h_l_m_1___1', 'p4_c_h_l_m_1___1_5',
+            'p4_c_l_h_m_1___1', 'p4_c_l_h_m_1___1_5',
+            'Percentage_4',
             '4_CLOSE_prev',
             '4_Open_point',
-            '4_High_point', 'Count_H_4', 'Count_L_4', 'Count_H_2', 'Count_L_2', 'Exchange',
+            '4_High_point',
+            '4_Low_point',
+            '4_Close_point',
+
+            'Count_H_4', 'Count_L_4',
+            'Count_H_2', 'Count_L_2',
+            'res_mt_h_l_o_2_4', 'res_1_5_o_up_4', 'res_mt_h_l_o_2_2', 'res_1_5_o_up_2',
+            'res_mt_l_h_o_2_4', 'res_0_5_less_4', 'res_mt_l_h_o_2_2', 'res_0_5_less_2',
+            # 'Exchange',
+            'm_data_count_l_h_0_5_1_4',
+            'm_data_count_l_h_0_5_1_2',
+            'm_data_count_l_h_0_5_1_5_4',
+            'm_data_count_l_h_0_5_1_5_2',
+
+            'm_data_count_l_h_1_1_4',
+            'm_data_count_l_h_1_1_2',
+            'm_data_count_l_h_1_1_5_4',
+            'm_data_count_l_h_1_1_5_2',
+
             'Yahoo_Rating', 'Yahoo_Rating_Key', 'regVolume', 'avgVolume',
             'quickRatio', 'currentRatio', 'pegRatio', 'shortRatio', 'payoutRatio',
-            '4_C-O', '4_O-H'
+            '4_C-O', '4_O-H', '4_O-L', '4_L-C'
         ])
         counter = 0
         # index = 1
         # good_stocks = []
+        inxd = 0
 
         for stock in tqdm(stocks['TICKER'], desc=f'search relevant ticker by tech analise of data tickers where close '
                                                  f'price {self.min_buy} vs {self.max_buy}: '):
-
+            inxd += 1
             if counter == 10:
                 time.sleep(10)
                 counter = 0
@@ -216,6 +295,8 @@ class Parser:
                 # print(data.index)
                 high_data = []
                 low_data = []
+                m_data_many_tick = []
+                m_data_tick = []
 
                 # print(open_data)
 
@@ -224,18 +305,24 @@ class Parser:
                     # print(value)
                     # print(index)
                     if index == 0:
-                        high, low, ind = self.get_stock_intraday(open=value, interval=1, index=index + over_count,
-                                                                 data=data_y)
+                        high, low, ind, data_many, data_tick = self.get_stock_intraday(open=value, interval=1,
+                                                                                       index=index + over_count,
+                                                                                       data=data_y)
                         high_data.append(high)
                         low_data.append(low)
+                        m_data_many_tick.append(data_many)
+                        m_data_tick.append(data_tick)
                         over_count = ind
                     else:
                         index = over_count
                         # print(index)
-                        high, low, ind = self.get_stock_intraday(open=value, interval=1, index=index, data=data_y)
+                        high, low, ind, data_many, data_tick = self.get_stock_intraday(open=value, interval=1,
+                                                                                       index=index, data=data_y)
 
                         high_data.append(high)
                         low_data.append(low)
+                        m_data_many_tick.append(data_many)
+                        m_data_tick.append(data_tick)
                         over_count = ind
                         # print(ind)
 
@@ -257,13 +344,14 @@ class Parser:
             print('Percentage +/- of ' + stock + ' =', pp_1,
                   ';', pp_2, ';', pp_3, ';', pp_4, )
 
-            try:
-                name_stock_exchange = self.get_name_stock_exchange(stock)
-            except Exception:
-                print()
-                print(f"ERROR load name {stock} exchange of investpy ")
-                traceback.print_exc()
-                continue
+            # try:
+            #     name_stock_exchange = self.get_name_stock_exchange(stock)
+            #
+            # except Exception:
+            #     print()
+            #     print(f"ERROR load name {stock} exchange of investpy ")
+            #     traceback.print_exc()
+            #     continue
 
             try:
                 regularMarketVolume, averageVolume10days, recommendationMean, recommendationKey, quickRatio, currentRatio, pegRatio, shortRatio, payoutRatio = self.get_info_yh(
@@ -278,11 +366,44 @@ class Parser:
                 continue
             # print(high_data)
             # print(low_data)
-            res_h_4 = sum(high_data[3][:4]) + sum(high_data[2][:4]) + sum(high_data[1][:4]) + sum(high_data[0][:4])
-            res_l_4 = sum(low_data[3][:4]) + sum(low_data[2][:4]) + sum(low_data[1][:4]) + sum(low_data[0][:4])
+            res_h_4 = sum(high_data[3][:5]) + sum(high_data[2][:5]) + sum(high_data[1][:5]) + sum(high_data[0][:5])
+            # print(high_data[3][:4])
+            res_l_4 = sum(low_data[3][:5]) + sum(low_data[2][:5]) + sum(low_data[1][:5]) + sum(low_data[0][:5])
 
-            res_h_2 = sum(high_data[3][:4]) + sum(high_data[2][:4])
-            res_l_2 = sum(low_data[3][:4]) + sum(low_data[2][:4])
+            res_h_2 = sum(high_data[1][:5]) + sum(high_data[0][:5])
+            res_l_2 = sum(low_data[1][:5]) + sum(low_data[0][:5])
+
+            res_mt_h_l_o_2_4 = high_data[0][8] + high_data[1][8] + high_data[2][8] + high_data[3][8]
+            res_1_5_o_up_4 = high_data[0][3] + high_data[1][3] + high_data[2][3] + high_data[3][3] + high_data[0][4] + \
+                             high_data[1][4] + high_data[2][4] + high_data[3][4]
+
+            res_mt_h_l_o_2_2 = high_data[0][8] + high_data[1][8]
+            res_1_5_o_up_2 = high_data[0][3] + high_data[1][3] + high_data[0][4] + high_data[1][4]
+
+            res_mt_l_h_o_2_4 = low_data[0][8] + low_data[1][8] + low_data[2][8] + low_data[3][8]
+            res_0_5_less_4 = low_data[0][4] + low_data[1][4] + low_data[2][4] + low_data[3][4]
+
+            res_mt_l_h_o_2_2 = low_data[0][8] + low_data[1][8]
+            res_0_5_less_2 = low_data[0][4] + low_data[1][4]
+
+            m_data_count_l_h_0_5_1_4 = m_data_tick[0][2] + m_data_tick[1][2] + m_data_tick[2][2] + m_data_tick[3][2]
+            m_data_count_l_h_0_5_1_2 = m_data_tick[0][2] + m_data_tick[1][2]
+
+            m_data_count_l_h_0_5_1_5_4 = m_data_tick[0][3] + m_data_tick[1][3] + m_data_tick[2][3] + m_data_tick[3][3]
+            m_data_count_l_h_0_5_1_5_2 = m_data_tick[0][3] + m_data_tick[1][3]
+
+            m_data_count_l_h_1_1_4 = m_data_tick[0][6] + m_data_tick[1][6] + m_data_tick[2][6] + m_data_tick[3][6]
+            m_data_count_l_h_1_1_2 = m_data_tick[0][6] + m_data_tick[1][6]
+
+            m_data_count_l_h_1_1_5_4 = m_data_tick[0][7] + m_data_tick[1][7] + m_data_tick[2][7] + m_data_tick[3][7]
+            m_data_count_l_h_1_1_5_2 = m_data_tick[0][7] + m_data_tick[1][7]
+
+            # m_data_many_l_h_4_1 = m_data_many_tick[0][]
+            # m_data_many_l_h_2_1 = sum(m_data_many_tick[0][:2]) + sum(m_data_many_tick[1][:2])
+            #
+            # m_data_tick_l_h_4_1 = sum(m_data_tick[0][:2]) + sum(m_data_tick[1][:2]) + sum(m_data_tick[2][:2]) + sum(
+            #     m_data_tick[3][:2])
+            # m_data_tick_l_h_2_1 = sum(m_data_tick[0][:2]) + sum(m_data_tick[1][:2])
 
             # res_l = sum(low_data[3][0]) + sum(low_data[3][1]) + sum(low_data[3][2]) + sum(low_data[3][3]) + sum(low_data[3][4])
             # print(res_h)
@@ -292,8 +413,6 @@ class Parser:
             # print(df)
             # print(np.array(df['Close'][-5:][4]))
             # print(np.array(df['Close'][-5:][3]))
-            # exit()
-
             data_ticker = data_ticker.append({
                 'TICKER': stock,
                 'Tech_buy': tech_buy,
@@ -307,7 +426,6 @@ class Parser:
                 'EMA_20': ema_20,
                 'EMA_100': ema_100,
 
-                'Percentage_1': pp_1,
                 'p1_Op_0,5_up': high_data[3][0],
                 'p1_0,5_1.0_up': high_data[3][1],
                 'p1_1,0_1,5_up': high_data[3][2],
@@ -326,11 +444,31 @@ class Parser:
                 'p1_c_mt_l_h_o_1': low_data[3][6],
                 'p1_c_l_h_o_2': low_data[3][7],
                 'p1_c_mt_l_h_o_2': low_data[3][8],
-                '1_CLOSE': np.array(df['Close'][-5:][1]),
-                '1_Open_point': np.array(df['Open'][-5:][1]),
-                '1_High_point': np.array(df['High'][-5:][1]),
+                'p1_c_mt_h_l_m_05___1': m_data_many_tick[3][0],
+                'p1_c_mt_h_l_m_05___1_5': m_data_many_tick[3][1],
+                'p1_c_mt_l_h_m_05___1': m_data_many_tick[3][2],
+                'p1_c_mt_l_h_m_05___1_5': m_data_many_tick[3][3],
+                'p1_c_h_l_m_05___1': m_data_tick[3][0],
+                'p1_c_h_l_m_05___1_5': m_data_tick[3][1],
+                'p1_c_l_h_m_05___1': m_data_tick[3][2],
+                'p1_c_l_h_m_05___1_5': m_data_tick[3][3],
 
-                'Percentage_2': pp_2,
+                'p1_c_mt_h_l_m_1___1': m_data_many_tick[3][4],
+                'p1_c_mt_h_l_m_1___1_5': m_data_many_tick[3][5],
+                'p1_c_mt_l_h_m_1___1': m_data_many_tick[3][6],
+                'p1_c_mt_l_h_m_1___1_5': m_data_many_tick[3][7],
+                'p1_c_h_l_m_1___1': m_data_tick[3][4],
+                'p1_c_h_l_m_1___1_5': m_data_tick[3][5],
+                'p1_c_l_h_m_1___1': m_data_tick[3][6],
+                'p1_c_l_h_m_1___1_5': m_data_tick[3][7],
+
+                'Percentage_1': pp_1,
+                '1_CLOSE_prev': np.array(df['Close'][-5:][1]),
+                '1_Open_point': np.array(df['Open'][-5:][2]),
+                '1_High_point': np.array(df['High'][-5:][2]),
+                '1_Low_point': np.array(df['Low'][-5:][2]),
+                '1_Close_point': np.array(df['Close'][-5:][2]),
+
                 'p2_Op_0,5_up': high_data[2][0],
                 'p2_0,5_1.0_up': high_data[2][1],
                 'p2_1,0_1,5_up': high_data[2][2],
@@ -349,11 +487,31 @@ class Parser:
                 'p2_c_mt_l_h_o_1': low_data[2][6],
                 'p2_c_l_h_o_2': low_data[2][7],
                 'p2_c_mt_l_h_o_2': low_data[2][8],
-                '2_CLOSE': np.array(df['Close'][-5:][2]),
-                '2_Open_point': np.array(df['Open'][-5:][2]),
-                '2_High_point': np.array(df['High'][-5:][2]),
+                'p2_c_mt_h_l_m_05___1': m_data_many_tick[2][0],
+                'p2_c_mt_h_l_m_05___1_5': m_data_many_tick[2][1],
+                'p2_c_mt_l_h_m_05___1': m_data_many_tick[2][2],
+                'p2_c_mt_l_h_m_05___1_5': m_data_many_tick[2][3],
+                'p2_c_h_l_m_05___1': m_data_tick[2][0],
+                'p2_c_h_l_m_05___1_5': m_data_tick[2][1],
+                'p2_c_l_h_m_05___1': m_data_tick[2][2],
+                'p2_c_l_h_m_05___1_5': m_data_tick[2][3],
 
-                'Percentage_3': pp_3,
+                'p2_c_mt_h_l_m_1___1': m_data_many_tick[2][4],
+                'p2_c_mt_h_l_m_1___1_5': m_data_many_tick[2][5],
+                'p2_c_mt_l_h_m_1___1': m_data_many_tick[2][6],
+                'p2_c_mt_l_h_m_1___1_5': m_data_many_tick[2][7],
+                'p2_c_h_l_m_1___1': m_data_tick[2][4],
+                'p2_c_h_l_m_1___1_5': m_data_tick[2][5],
+                'p2_c_l_h_m_1___1': m_data_tick[2][6],
+                'p2_c_l_h_m_1___1_5': m_data_tick[2][7],
+
+                'Percentage_2': pp_2,
+                '2_CLOSE_prev': np.array(df['Close'][-5:][2]),
+                '2_Open_point': np.array(df['Open'][-5:][3]),
+                '2_High_point': np.array(df['High'][-5:][3]),
+                '2_Low_point': np.array(df['Low'][-5:][3]),
+                '2_Close_point': np.array(df['Close'][-5:][3]),
+
                 'p3_Op_0,5_up': high_data[1][0],
                 'p3_0,5_1.0_up': high_data[1][1],
                 'p3_1,0_1,5_up': high_data[1][2],
@@ -372,11 +530,31 @@ class Parser:
                 'p3_c_mt_l_h_o_1': low_data[1][6],
                 'p3_c_l_h_o_2': low_data[1][7],
                 'p3_c_mt_l_h_o_2': low_data[1][8],
-                '3_CLOSE': np.array(df['Close'][-5:][3]),
-                '3_Open_point': np.array(df['Open'][-5:][3]),
-                '3_High_point': np.array(df['High'][-5:][3]),
+                'p3_c_mt_h_l_m_05___1': m_data_many_tick[1][0],
+                'p3_c_mt_h_l_m_05___1_5': m_data_many_tick[1][1],
+                'p3_c_mt_l_h_m_05___1': m_data_many_tick[1][2],
+                'p3_c_mt_l_h_m_05___1_5': m_data_many_tick[1][3],
+                'p3_c_h_l_m_05___1': m_data_tick[1][0],
+                'p3_c_h_l_m_05___1_5': m_data_tick[1][1],
+                'p3_c_l_h_m_05___1': m_data_tick[1][2],
+                'p3_c_l_h_m_05___1_5': m_data_tick[1][3],
 
-                'Percentage_4': pp_4,
+                'p3_c_mt_h_l_m_1___1': m_data_many_tick[1][4],
+                'p3_c_mt_h_l_m_1___1_5': m_data_many_tick[1][5],
+                'p3_c_mt_l_h_m_1___1': m_data_many_tick[1][6],
+                'p3_c_mt_l_h_m_1___1_5': m_data_many_tick[1][7],
+                'p3_c_h_l_m_1___1': m_data_tick[1][4],
+                'p3_c_h_l_m_1___1_5': m_data_tick[1][5],
+                'p3_c_l_h_m_1___1': m_data_tick[1][6],
+                'p3_c_l_h_m_1___1_5': m_data_tick[1][7],
+
+                'Percentage_3': pp_3,
+                '3_CLOSE_prev': np.array(df['Close'][-5:][3]),
+                '3_Open_point': np.array(df['Open'][-5:][4]),
+                '3_High_point': np.array(df['High'][-5:][4]),
+                '3_Low_point': np.array(df['Low'][-5:][4]),
+                '3_Close_point': np.array(df['Close'][-5:][4]),
+
                 'p4_Op_0,5_up': high_data[0][0],
                 'p4_0,5_1.0_up': high_data[0][1],
                 'p4_1,0_1,5_up': high_data[0][2],
@@ -395,6 +573,25 @@ class Parser:
                 'p4_c_mt_l_h_o_1': low_data[0][6],
                 'p4_c_l_h_o_2': low_data[0][7],
                 'p4_c_mt_l_h_o_2': low_data[0][8],
+                'p4_c_mt_h_l_m_05___1': m_data_many_tick[0][0],
+                'p4_c_mt_h_l_m_05___1_5': m_data_many_tick[0][1],
+                'p4_c_mt_l_h_m_05___1': m_data_many_tick[0][2],
+                'p4_c_mt_l_h_m_05___1_5': m_data_many_tick[0][3],
+                'p4_c_h_l_m_05___1': m_data_tick[0][0],
+                'p4_c_h_l_m_05___1_5': m_data_tick[0][1],
+                'p4_c_l_h_m_05___1': m_data_tick[0][2],
+                'p4_c_l_h_m_05___1_5': m_data_tick[0][3],
+
+                'p4_c_mt_h_l_m_1___1': m_data_many_tick[0][4],
+                'p4_c_mt_h_l_m_1___1_5': m_data_many_tick[0][5],
+                'p4_c_mt_l_h_m_1___1': m_data_many_tick[0][6],
+                'p4_c_mt_l_h_m_1___1_5': m_data_many_tick[0][7],
+                'p4_c_h_l_m_1___1': m_data_tick[0][4],
+                'p4_c_h_l_m_1___1_5': m_data_tick[0][5],
+                'p4_c_l_h_m_1___1': m_data_tick[0][6],
+                'p4_c_l_h_m_1___1_5': m_data_tick[0][7],
+
+                'Percentage_4': pp_4,
                 '4_CLOSE_prev': np.array(df['Close'][-5:][4]),
 
                 'Count_H_4': res_h_4,
@@ -403,7 +600,27 @@ class Parser:
                 'Count_H_2': res_h_2,
                 'Count_L_2': res_l_2,
 
-                'Exchange': name_stock_exchange,
+                'res_mt_h_l_o_2_4': res_mt_h_l_o_2_4,
+                'res_1_5_o_up_4': res_1_5_o_up_4,
+                'res_mt_h_l_o_2_2': res_mt_h_l_o_2_2,
+                'res_1_5_o_up_2': res_1_5_o_up_2,
+
+                'res_mt_l_h_o_2_4': res_mt_l_h_o_2_4,
+                'res_0_5_less_4': res_0_5_less_4,
+                'res_mt_l_h_o_2_2': res_mt_l_h_o_2_2,
+                'res_0_5_less_2': res_0_5_less_2,
+
+                'm_data_count_l_h_0_5_1_4': m_data_count_l_h_0_5_1_4,
+                'm_data_count_l_h_0_5_1_2': m_data_count_l_h_0_5_1_2,
+                'm_data_count_l_h_0_5_1_5_4': m_data_count_l_h_0_5_1_5_4,
+                'm_data_count_l_h_0_5_1_5_2': m_data_count_l_h_0_5_1_5_2,
+
+                'm_data_count_l_h_1_1_4': m_data_count_l_h_1_1_4,
+                'm_data_count_l_h_1_1_2': m_data_count_l_h_1_1_2,
+                'm_data_count_l_h_1_1_5_4': m_data_count_l_h_1_1_5_4,
+                'm_data_count_l_h_1_1_5_2': m_data_count_l_h_1_1_5_2,
+
+                # 'Exchange': name_stock_exchange,
                 # 'Yahoo_Rating': yahoo_rating
 
                 'Yahoo_Rating': recommendationMean,
@@ -418,20 +635,36 @@ class Parser:
                 'payoutRatio': payoutRatio
 
             }, ignore_index=True)
+            # exit()
+
             print(f'{stock} add to data...')
             # index += 1
             counter += 1
             self.good_stocks.append(stock)
-            # self.bot.send_message(config.ID_chat, f'{len(good_stocks)}) {stock} add to data...')
+            # self.bot.send( f'{len(good_stocks)}) {stock} add to data...')
             time.sleep(1)
+            # print(f'down {self.data}')
+            # self.data.set_item_to_data(stock)
 
+            temp_str = f'{inxd} of {len(stocks["TICKER"])}'
+            # print(temp_str)
+            data_to_bot = [self.good_stocks, [temp_str]]
+            # print(data_to_bot)
+            self.bot.add_item_to_data(data_to_bot)
+
+            # self.bot.add_item_to_data(stock)
+            # self.bot.add_count_of_parse(temp_str)
+            #
             # data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
+            #
+            # self.bot.send(f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
             # exit()
+
             yield stock
         data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
-        self.bot.send_message(config.ID_chat,
-                              f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
-        self.driver.close()
+        self.bot.send(
+            f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
+        # self.driver.close()
 
     def get_good_stocks(self):
         return self.good_stocks
@@ -440,6 +673,9 @@ class Parser:
         # print('intro')
         high_data = []
         low_data = []
+        m_data_many_tick = []
+        m_data_tick = []
+
         is_date = True
         is_date_count = 0
 
@@ -473,28 +709,100 @@ class Parser:
 
                 # array_h = np.array(result_data['2. high'])[::-1]
                 array_h = np.array(result_data['High'])
+                # array_h = np.array(result_data['High'][:len(result_data['High'])//3])
                 # array_h = np.array(result_data['4. close'])[::-1]
                 # array_l = np.array(result_data['3. low'])[::-1]
                 array_l = np.array(result_data['Low'])
+                # array_l = np.array(result_data['Low'][:len(result_data['Low'])//3])
 
-                # print(array_h)
-                # print(array_l)
+                # print(len(array_h))
+                # print(len(array_l))
+                # # print(len(array_h[:len(array_h)//3]))
+                # # print(len(array_l[:len(array_l)//3]))
+                #
+                # exit()
 
                 count_many_tick_h_l_over_2, count_many_tick_l_h_over_2 = self.get_many_tick_height_low___low_height(
                     array_h,
                     array_l,
                     percent_2,
-                    percent_m_0_2)
-                count_h_l_over_2, count_l_h_over_2 = self.get_tick_height_low___low_height(array_h, array_l, percent_2,
-                                                                                           percent_m_0_2)
+                    open)
+                # percent_m_0_5)
+                # percent_m_0_2)
+
+                count_h_l_over_2, count_l_h_over_2 = self.get_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_2,
+                    open)
+                # percent_m_0_5)
+                # percent_m_0_2)
 
                 count_many_tick_h_l_over_1, count_many_tick_l_h_over_1 = self.get_many_tick_height_low___low_height(
                     array_h,
                     array_l,
                     percent_1,
-                    percent_m_0_2)
-                count_h_l_over_1, count_l_h_over_1 = self.get_tick_height_low___low_height(array_h, array_l, percent_1,
-                                                                                           percent_m_0_2)
+                    open)
+                # percent_m_0_5)
+                # percent_m_0_2)
+
+                count_h_l_over_1, count_l_h_over_1 = self.get_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_1,
+                    open)
+                # percent_m_0_5)
+                # percent_m_0_2)
+
+                count_many_tick_h_l_m_05___1, count_many_tick_l_h_m_05___1 = self.get_many_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_0_5 + (percent_m_0_5 * .01),
+                    percent_m_0_5)
+
+                count_many_tick_h_l_m_05___1_5, count_many_tick_l_h_m_05___1_5 = self.get_many_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_0_5 + (percent_m_0_5 * .015),
+                    percent_m_0_5)
+
+                count_h_l_m_05___1, count_l_h_m_05___1 = self.get_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_0_5 + (percent_m_0_5 * .01),
+                    percent_m_0_5)
+
+                count_h_l_m_05___1_5, count_l_h_m_05___1_5 = self.get_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_0_5 + (percent_m_0_5 * .015),
+                    percent_m_0_5)
+
+                percent_m_1 = open - (open * .01)
+
+                count_many_tick_h_l_m_1___1, count_many_tick_l_h_m_1___1 = self.get_many_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_1 + (percent_m_1 * .01),
+                    percent_m_1)
+
+                count_many_tick_h_l_m_1___1_5, count_many_tick_l_h_m_1___1_5 = self.get_many_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_1 + (percent_m_1 * .015),
+                    percent_m_1)
+
+                count_h_l_m_1___1, count_l_h_m_1___1 = self.get_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_1 + (percent_m_1 * .01),
+                    percent_m_1)
+
+                count_h_l_m_1___1_5, count_l_h_m_1___1_5 = self.get_tick_height_low___low_height(
+                    array_h,
+                    array_l,
+                    percent_m_1 + (percent_m_1 * .015),
+                    percent_m_1)
 
                 open_percent_0_5, open_percent_m_0_2, percent_0_5_percent_1, percent_1_5_percent_2, percent_1_percent_1_5, percent_2_over, percent_m_0_2_percent_m_0_3, percent_m_0_3_percent_m_0_4, percent_m_0_4_percent_m_0_5, percent_m_0_5_less = self.create_metric_of_procent_group(
                     open, percent_0_5, percent_1, percent_1_5, percent_2, percent_m_0_2, percent_m_0_3, percent_m_0_4,
@@ -508,6 +816,16 @@ class Parser:
                             percent_m_0_4_percent_m_0_5,
                             percent_m_0_5_less, count_l_h_over_1, count_many_tick_l_h_over_1, count_l_h_over_2,
                             count_many_tick_l_h_over_2]
+                m_data_many_tick = [count_many_tick_h_l_m_05___1, count_many_tick_h_l_m_05___1_5,
+                                    count_many_tick_l_h_m_05___1, count_many_tick_l_h_m_05___1_5,
+                                    count_many_tick_h_l_m_1___1, count_many_tick_h_l_m_1___1_5,
+                                    count_many_tick_l_h_m_1___1, count_many_tick_l_h_m_1___1_5
+                                    ]
+                m_data_tick = [count_h_l_m_05___1, count_h_l_m_05___1_5,
+                               count_l_h_m_05___1, count_l_h_m_05___1_5,
+                               count_h_l_m_1___1, count_h_l_m_1___1_5,
+                               count_l_h_m_1___1, count_l_h_m_1___1_5
+                               ]
 
                 # high_data.append(high)
                 # low_data.append(low)
@@ -527,7 +845,7 @@ class Parser:
         # print(high_data)
         # print(low_data)
 
-        return high_data, low_data, index
+        return high_data, low_data, index, m_data_many_tick, m_data_tick
 
     def create_metric_of_procent_group(self, open, percent_0_5, percent_1, percent_1_5, percent_2, percent_m_0_2,
                                        percent_m_0_3, percent_m_0_4, percent_m_0_5, result_data):
@@ -588,8 +906,11 @@ class Parser:
             #     stock=name, country=self.country, from_date=self.from_date, to_date=self.current_date)
             # print(self.from_date_y)
             # print(self.current_date_y)
-
-            df = yf.download(tickers=name, start=self.from_date_y, end=self.current_date_y)
+            try:
+                df = yf.download(tickers=name, start=self.from_date_y, end=self.current_date_y)
+            except Exception:
+                traceback.print_exc()
+                continue
             cr_m = df.index[-1:].tolist()[0].month
             cr_d = df.index[-1:].tolist()[0].day
             cr_y = df.index[-1:].tolist()[0].year
@@ -604,18 +925,22 @@ class Parser:
                         df['Open'][-5:][4])
                     data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], '4_High_point'] = np.array(
                         df['High'][-5:][4])
+                    data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], '4_Low_point'] = np.array(
+                        df['Low'][-5:][4])
+                    data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], '4_Close_point'] = np.array(
+                        df['Low'][-5:][4])
             except:
                 print()
                 print(f'ticker: {name} not available data')
                 continue
 
-        self.bot.send_message(config.ID_chat, f'addition_main_data_ticker  is DONE!!')
+        self.bot.send(f'addition_main_data_ticker  is DONE!!')
 
         # data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
         # exit()
 
         data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
-        # await self.bot.send_message(config.ID_chat, f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
+        # await self.bot.send( f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
         # self.bot.send_message('167381172', f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
         # self.bot.process_new_updates(['\zx'])
 
