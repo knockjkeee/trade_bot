@@ -1,7 +1,7 @@
 # param search stock
 COUNTRY = 'united states'
 MIN_BUY = 1
-MAX_BUY = 200
+MAX_BUY = 201
 
 # file name
 NAME_DATA = 'data_tinkov.xlsx'

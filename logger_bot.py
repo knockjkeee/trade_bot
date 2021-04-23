@@ -83,6 +83,7 @@ class TGBOT(object):
         self.bot.send_message(self.id_chat, str(len(self.data[0])))
 
     def append_data(self, message):
+        # self.data[2][0].search_relevant_ticker()
         letters = string.ascii_lowercase
         result = (''.join(random.choice(letters) for i in range(10)))
         self.data.append(result)

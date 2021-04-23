@@ -50,6 +50,7 @@ def main():
 
     # queue = Manager().Queue()
     parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage, config.NAME_DATA, bot)
+    # data_stock.append([parser])
 
     # queue.put_nowait(parser)
 

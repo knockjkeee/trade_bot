@@ -214,7 +214,8 @@ class Parser(object):
                 time.sleep(2)
                 technical_indicators = investpy.technical.technical_indicators(
                     # technical_indicators = investpy.technical_indicators(
-                    stock, self.country, 'stock', interval='daily')
+                    # stock, self.country, 'stock', interval='daily')
+                    stock, self.country, 'stock', interval='5hours')
                 country = self.country
                 time.sleep(1)
                 # print(technical_indicators)
@@ -928,7 +929,7 @@ class Parser(object):
                     data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], '4_Low_point'] = np.array(
                         df['Low'][-5:][4])
                     data.loc[data.TICKER[data.TICKER == name].index.tolist()[0], '4_Close_point'] = np.array(
-                        df['Low'][-5:][4])
+                        df['Close'][-5:][4])
             except:
                 print()
                 print(f'ticker: {name} not available data')
