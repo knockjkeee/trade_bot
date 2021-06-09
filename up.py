@@ -49,7 +49,7 @@ def main():
     # parser
 
     # queue = Manager().Queue()
-    parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage, config.NAME_DATA, bot)
+    parser = Parser(config.COUNTRY, config.MIN_BUY, config.MAX_BUY, config.API_alpha_vantage, config.NAME_DATA, bot, config.interval)
     # data_stock.append([parser])
 
     # queue.put_nowait(parser)
@@ -62,15 +62,14 @@ def main():
     bot.set_data(data_stock)
     print("test")
 
-    if is_data_exist(config.NAME_DATA):
-        for stock in parser.search_relevant_ticker():
-            print(f'diiiir:  {stock}')
-            # data_stock.append(stock)
-    else:
-        parser.create_data_ticker_min_max_by_close()
-        parser.search_relevant_ticker()
-    # parser.addition_main_data_ticker()
-
+    # if is_data_exist(config.NAME_DATA):
+    #     for stock in parser.search_relevant_ticker():
+    #         print(f'diiiir:  {stock}')
+    #         # data_stock.append(stock)
+    # else:
+    #     parser.create_data_ticker_min_max_by_close()
+    #     parser.search_relevant_ticker()
+    parser.addition_main_data_ticker()
 
 def is_data_exist(file_name):
     for root, dirs, files in os.walk(".", topdown=False):

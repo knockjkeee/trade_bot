@@ -67,7 +67,7 @@ class TGBOT(object):
 
     def get_parse(self, message):
         # self.parser.search_relevant_ticker()
-        self.bot.send_message(self.id_chat, str(self.data[1]))
+        self.bot.send_message(self.id_chat, str(f'{config.interval} --> {self.data[1]}'))
         # self.bot.send_message(self.id_chat, str(self.data_parse_item))
 
 
@@ -80,7 +80,7 @@ class TGBOT(object):
     def get_data(self, message):
         # self.bot.send_message(self.id_chat, str(self.data_parse_item))
         self.bot.send_message(self.id_chat, str(self.data[0]))
-        self.bot.send_message(self.id_chat, str(len(self.data[0])))
+        self.bot.send_message(self.id_chat, str(f'{config.interval} --> {len(self.data[0])}'))
 
     def append_data(self, message):
         # self.data[2][0].search_relevant_ticker()
@@ -99,12 +99,13 @@ class TGBOT(object):
 
     def get_menu(self, message):
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2)
-        itembtn1 = telebot.types.KeyboardButton('/start')
+        # itembtn1 = telebot.types.KeyboardButton('/start')
         itembtn2 = telebot.types.KeyboardButton('/dir')
-        itembtn3 = telebot.types.KeyboardButton('/append')
-        itembtn4 = telebot.types.KeyboardButton('/drop')
+        # itembtn3 = telebot.types.KeyboardButton('/append')
+        # itembtn4 = telebot.types.KeyboardButton('/drop')
         itembtn5 = telebot.types.KeyboardButton('/good')
-        markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5)
+        # markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5)
+        markup.add(itembtn2,  itembtn5)
         # markup.add(itembtn1, itembtn2, itembtn3, itembtn4)
         # markup.resize_keyboard()
         self.bot.send_message(self.id_chat, "Choose one items:", reply_markup=markup)

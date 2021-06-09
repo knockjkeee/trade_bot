@@ -25,13 +25,15 @@ class Parser(object):
     provider ticker stocks exchange
     """
 
-    def __init__(self, country, min_buy, max_buy, config_a_vil, file_name, bot):
+    def __init__(self, country, min_buy, max_buy, config_a_vil, file_name, bot, interval):
         # self.data = data
         self.config_a_vil = config_a_vil
         self.max_buy = max_buy
         self.min_buy = min_buy
         self.country = country
         self.bot = bot
+        self.interval = interval
+        self.stocks_list = investpy.get_stocks_list(country=None)
 
         # print(self.bot)
 
@@ -202,469 +204,471 @@ class Parser(object):
 
         for stock in tqdm(stocks['TICKER'], desc=f'search relevant ticker by tech analise of data tickers where close '
                                                  f'price {self.min_buy} vs {self.max_buy}: '):
-            inxd += 1
-            if counter == 10:
-                time.sleep(10)
-                counter = 0
-            try:
-                # df = investpy.get_stock_historical_data(
-                #     stock=stock, country=self.country, from_date=self.from_date, to_date=self.current_date)
-                # #stock='REZI', country=self.country, from_date=self.from_date, to_date=self.current_date)
-                # time.sleep(5)
+            if stock in self.stocks_list:
+                inxd += 1
+                if counter == 10:
+                    time.sleep(10)
+                    counter = 0
+                try:
+                    # df = investpy.get_stock_historical_data(
+                    #     stock=stock, country=self.country, from_date=self.from_date, to_date=self.current_date)
+                    # #stock='REZI', country=self.country, from_date=self.from_date, to_date=self.current_date)
+                    # time.sleep(5)
+                    time.sleep(2)
+                    technical_indicators = investpy.technical.technical_indicators(
+                        # technical_indicators = investpy.technical_indicators(
+                        # stock, self.country, 'stock', interval='daily')
+                        stock, self.country, 'stock', interval=self.interval)
+                    country = self.country
+                    time.sleep(1)
+                    # print(technical_indicators)
+                    # investpy.technical_indicators()
+                except Exception:
+                    print()
+                    print(f"ERROR load data {stock} of get investpy.technical.technical_indicators ")
+                    traceback.print_exc()
+                    continue
+
+                # print(f'\ncurrent stock - {stock}')
+
+                try:
+                    tech_buy, tech_sell = self.get_tech_idicator_sell_buy(technical_indicators)
+                except Exception:
+                    print()
+                    print(f"ERROR load data {stock} of get tech idicator sell buy ")
+                    traceback.print_exc()
+                    continue
+
                 time.sleep(2)
-                technical_indicators = investpy.technical.technical_indicators(
-                    # technical_indicators = investpy.technical_indicators(
-                    # stock, self.country, 'stock', interval='daily')
-                    stock, self.country, 'stock', interval='5hours')
-                country = self.country
-                time.sleep(1)
-                # print(technical_indicators)
-                # investpy.technical_indicators()
-            except Exception:
-                print()
-                print(f"ERROR load data {stock} of get investpy.technical.technical_indicators ")
-                traceback.print_exc()
-                continue
 
-            # print(f'\ncurrent stock - {stock}')
+                try:
+                    moving_averages, moving_sma_buy, moving_sma_sell = self.get_sma_sell_buy(country, stock)
+                    moving_ema_buy, moving_ema_sell = self.get_ema_sell(moving_averages)
+                except:
+                    print()
+                    print(f"ERROR load data {stock} of get tech idicator SMA EMA ")
+                    continue
 
-            try:
-                tech_buy, tech_sell = self.get_tech_idicator_sell_buy(technical_indicators)
-            except Exception:
-                print()
-                print(f"ERROR load data {stock} of get tech idicator sell buy ")
-                traceback.print_exc()
-                continue
+                if tech_buy < 9 or tech_sell > 2 or moving_sma_buy < 5 or moving_ema_buy < 5:
+                    continue
+                # TODO место сбора детальных данных
 
-            time.sleep(2)
+                try:
+                    ema_100, ema_20, sma_100, sma_20 = self.get_sma_ema_20_100(moving_averages)
+                except:
+                    print()
+                    print(f"ERROR load data {stock} of get tech idicator SMA EMA 100/20 ")
+                    continue
 
-            try:
-                moving_averages, moving_sma_buy, moving_sma_sell = self.get_sma_sell_buy(country, stock)
-                moving_ema_buy, moving_ema_sell = self.get_ema_sell(moving_averages)
-            except:
-                print()
-                print(f"ERROR load data {stock} of get tech idicator SMA EMA ")
-                continue
+                try:
+                    print()
+                    df = yf.download(tickers=stock, start=self.from_date_y, end=self.current_date_y)
+                except:
+                    print(f"ERROR load data {stock} of get yfinance")
+                    continue
 
-            if tech_buy < 9 or tech_sell > 2 or moving_sma_buy < 5 or moving_ema_buy < 5:
-                continue
-            # TODO место сбора детальных данных
+                try:
+                    # print()
+                    print(str(len(self.good_stocks) + 1) + ') ' + 'STOCK =', stock)
+                    print(f'Tech sell indicators: to buy = {tech_buy} of 12;  to sell = {tech_sell} of 12')
+                    print(f'SMA moving averages: to buy = {moving_sma_buy} of 6;  to sell = {moving_sma_sell} of 6')
+                    print(f'EMA moving averages: to buy = {moving_ema_buy} of 6;  to sell = {moving_ema_sell} of 6')
+                    print(f'SMA_20 = {sma_20} ; SMA_100 = {sma_100} ; EMA_20 = {ema_20} ; EMA_100 = {ema_100}')
+                    print(
+                        f"Prices Last Five days of  {stock} = {np.array(df['Close'][-5:][0])} ; {np.array(df['Close'][-5:][1])} ;"
+                        f" {np.array(df['Close'][-5:][2])} ; {np.array(df['Close'][-5:][3])} ; {np.array(df['Close'][-5:][4])}")
 
-            try:
-                ema_100, ema_20, sma_100, sma_20 = self.get_sma_ema_20_100(moving_averages)
-            except:
-                print()
-                print(f"ERROR load data {stock} of get tech idicator SMA EMA 100/20 ")
-                continue
+                    open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])),
+                                 float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
+                    time.sleep(1)
+                except:
+                    print()
+                    print(f"ERROR print data {stock} of IndexError: index 4 is out of bounds for axis 0 with size 4 ")
+                    continue
 
-            try:
-                print()
-                df = yf.download(tickers=stock, start=self.from_date_y, end=self.current_date_y)
-            except:
-                print(f"ERROR load data {stock} of get yfinance")
-                continue
+                try:
+                    # data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
 
-            try:
-                # print()
-                print(str(len(self.good_stocks) + 1) + ') ' + 'STOCK =', stock)
-                print(f'Tech sell indicators: to buy = {tech_buy} of 12;  to sell = {tech_sell} of 12')
-                print(f'SMA moving averages: to buy = {moving_sma_buy} of 6;  to sell = {moving_sma_sell} of 6')
-                print(f'EMA moving averages: to buy = {moving_ema_buy} of 6;  to sell = {moving_ema_sell} of 6')
-                print(f'SMA_20 = {sma_20} ; SMA_100 = {sma_100} ; EMA_20 = {ema_20} ; EMA_100 = {ema_100}')
-                print(
-                    f"Prices Last Five days of  {stock} = {np.array(df['Close'][-5:][0])} ; {np.array(df['Close'][-5:][1])} ;"
-                    f" {np.array(df['Close'][-5:][2])} ; {np.array(df['Close'][-5:][3])} ; {np.array(df['Close'][-5:][4])}")
+                    data_y = yf.download(stock, self.from_date_y, self.current_date_y, interval='2m')
 
-                open_data = [float(np.array(df['Open'][-5:][4])), float(np.array(df['Open'][-5:][3])),
-                             float(np.array(df['Open'][-5:][2])), float(np.array(df['Open'][-5:][1]))]
-                time.sleep(1)
-            except:
-                print()
-                print(f"ERROR print data {stock} of IndexError: index 4 is out of bounds for axis 0 with size 4 ")
-                continue
+                    # print(data)
+                    # print(data_y)
+                    # exit()
 
-            try:
-                # data, meta_data = self.ts.get_intraday(symbol=stock, interval='5min', outputsize='full')
+                    # data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
+                    # print(data.index)
+                    high_data = []
+                    low_data = []
+                    m_data_many_tick = []
+                    m_data_tick = []
 
-                data_y = yf.download(stock, self.from_date_y, self.current_date_y, interval='2m')
+                    # print(open_data)
 
-                # print(data)
-                # print(data_y)
-                # exit()
-
-                # data.index = pd.DatetimeIndex(data.index) + timedelta(hours=3, minutes=58)
-                # print(data.index)
-                high_data = []
-                low_data = []
-                m_data_many_tick = []
-                m_data_tick = []
-
-                # print(open_data)
-
-                over_count = 0
-                for index, value in enumerate(open_data):
-                    # print(value)
-                    # print(index)
-                    if index == 0:
-                        high, low, ind, data_many, data_tick = self.get_stock_intraday(open=value, interval=1,
-                                                                                       index=index + over_count,
-                                                                                       data=data_y)
-                        high_data.append(high)
-                        low_data.append(low)
-                        m_data_many_tick.append(data_many)
-                        m_data_tick.append(data_tick)
-                        over_count = ind
-                    else:
-                        index = over_count
+                    over_count = 0
+                    for index, value in enumerate(open_data):
+                        # print(value)
                         # print(index)
-                        high, low, ind, data_many, data_tick = self.get_stock_intraday(open=value, interval=1,
-                                                                                       index=index, data=data_y)
+                        if index == 0:
+                            high, low, ind, data_many, data_tick = self.get_stock_intraday(open=value, interval=1,
+                                                                                           index=index + over_count,
+                                                                                           data=data_y)
+                            high_data.append(high)
+                            low_data.append(low)
+                            m_data_many_tick.append(data_many)
+                            m_data_tick.append(data_tick)
+                            over_count = ind
+                        else:
+                            index = over_count
+                            # print(index)
+                            high, low, ind, data_many, data_tick = self.get_stock_intraday(open=value, interval=1,
+                                                                                           index=index, data=data_y)
 
-                        high_data.append(high)
-                        low_data.append(low)
-                        m_data_many_tick.append(data_many)
-                        m_data_tick.append(data_tick)
-                        over_count = ind
-                        # print(ind)
+                            high_data.append(high)
+                            low_data.append(low)
+                            m_data_many_tick.append(data_many)
+                            m_data_tick.append(data_tick)
+                            over_count = ind
+                            # print(ind)
 
-                    # if ind == 3:
-                    #     over_count = ind
+                        # if ind == 3:
+                        #     over_count = ind
 
+                    # print(high_data)
+                    # print(low_data)
+                    # exit()
+
+                except Exception:
+                    print()
+                    print(f"ERROR load data {stock} of alpha_vantage.timeseries ")
+                    traceback.print_exc()
+                    continue
+
+                pp_1, pp_2, pp_3, pp_4 = self.get_percentage_for_four_day_ago(df)
+
+                print('Percentage +/- of ' + stock + ' =', pp_1,
+                      ';', pp_2, ';', pp_3, ';', pp_4, )
+
+                # try:
+                #     name_stock_exchange = self.get_name_stock_exchange(stock)
+                #
+                # except Exception:
+                #     print()
+                #     print(f"ERROR load name {stock} exchange of investpy ")
+                #     traceback.print_exc()
+                #     continue
+
+                try:
+                    regularMarketVolume, averageVolume10days, recommendationMean, recommendationKey, quickRatio, currentRatio, pegRatio, shortRatio, payoutRatio = self.get_info_yh(
+                        stock)
+
+
+
+                except Exception:
+                    print()
+                    print(f"ERROR load name {stock} yahoo_rating")
+                    traceback.print_exc()
+                    continue
                 # print(high_data)
                 # print(low_data)
+                res_h_4 = sum(high_data[3][:5]) + sum(high_data[2][:5]) + sum(high_data[1][:5]) + sum(high_data[0][:5])
+                # print(high_data[3][:4])
+                res_l_4 = sum(low_data[3][:5]) + sum(low_data[2][:5]) + sum(low_data[1][:5]) + sum(low_data[0][:5])
+
+                res_h_2 = sum(high_data[1][:5]) + sum(high_data[0][:5])
+                res_l_2 = sum(low_data[1][:5]) + sum(low_data[0][:5])
+
+                res_mt_h_l_o_2_4 = high_data[0][8] + high_data[1][8] + high_data[2][8] + high_data[3][8]
+                res_1_5_o_up_4 = high_data[0][3] + high_data[1][3] + high_data[2][3] + high_data[3][3] + high_data[0][4] + \
+                                 high_data[1][4] + high_data[2][4] + high_data[3][4]
+
+                res_mt_h_l_o_2_2 = high_data[0][8] + high_data[1][8]
+                res_1_5_o_up_2 = high_data[0][3] + high_data[1][3] + high_data[0][4] + high_data[1][4]
+
+                res_mt_l_h_o_2_4 = low_data[0][8] + low_data[1][8] + low_data[2][8] + low_data[3][8]
+                res_0_5_less_4 = low_data[0][4] + low_data[1][4] + low_data[2][4] + low_data[3][4]
+
+                res_mt_l_h_o_2_2 = low_data[0][8] + low_data[1][8]
+                res_0_5_less_2 = low_data[0][4] + low_data[1][4]
+
+                m_data_count_l_h_0_5_1_4 = m_data_tick[0][2] + m_data_tick[1][2] + m_data_tick[2][2] + m_data_tick[3][2]
+                m_data_count_l_h_0_5_1_2 = m_data_tick[0][2] + m_data_tick[1][2]
+
+                m_data_count_l_h_0_5_1_5_4 = m_data_tick[0][3] + m_data_tick[1][3] + m_data_tick[2][3] + m_data_tick[3][3]
+                m_data_count_l_h_0_5_1_5_2 = m_data_tick[0][3] + m_data_tick[1][3]
+
+                m_data_count_l_h_1_1_4 = m_data_tick[0][6] + m_data_tick[1][6] + m_data_tick[2][6] + m_data_tick[3][6]
+                m_data_count_l_h_1_1_2 = m_data_tick[0][6] + m_data_tick[1][6]
+
+                m_data_count_l_h_1_1_5_4 = m_data_tick[0][7] + m_data_tick[1][7] + m_data_tick[2][7] + m_data_tick[3][7]
+                m_data_count_l_h_1_1_5_2 = m_data_tick[0][7] + m_data_tick[1][7]
+
+                # m_data_many_l_h_4_1 = m_data_many_tick[0][]
+                # m_data_many_l_h_2_1 = sum(m_data_many_tick[0][:2]) + sum(m_data_many_tick[1][:2])
+                #
+                # m_data_tick_l_h_4_1 = sum(m_data_tick[0][:2]) + sum(m_data_tick[1][:2]) + sum(m_data_tick[2][:2]) + sum(
+                #     m_data_tick[3][:2])
+                # m_data_tick_l_h_2_1 = sum(m_data_tick[0][:2]) + sum(m_data_tick[1][:2])
+
+                # res_l = sum(low_data[3][0]) + sum(low_data[3][1]) + sum(low_data[3][2]) + sum(low_data[3][3]) + sum(low_data[3][4])
+                # print(res_h)
+                # print(res_l)
                 # exit()
 
-            except Exception:
-                print()
-                print(f"ERROR load data {stock} of alpha_vantage.timeseries ")
-                traceback.print_exc()
-                continue
+                # print(df)
+                # print(np.array(df['Close'][-5:][4]))
+                # print(np.array(df['Close'][-5:][3]))
+                data_ticker = data_ticker.append({
+                    'TICKER': stock,
+                    'Tech_buy': tech_buy,
+                    'Tech_sell': tech_sell,
+                    'SMA_buy': moving_sma_buy,
+                    'SMA_sell': moving_sma_sell,
+                    'SMA_20': sma_20,
+                    'SMA_100': sma_100,
+                    'EMA_buy': moving_ema_buy,
+                    'EMA_sell': moving_ema_sell,
+                    'EMA_20': ema_20,
+                    'EMA_100': ema_100,
 
-            pp_1, pp_2, pp_3, pp_4 = self.get_percentage_for_four_day_ago(df)
+                    'p1_Op_0,5_up': high_data[3][0],
+                    'p1_0,5_1.0_up': high_data[3][1],
+                    'p1_1,0_1,5_up': high_data[3][2],
+                    'p1_1,5_2,0_up': high_data[3][3],
+                    'p1_2,0_over_up': high_data[3][4],
+                    'p1_c_h_l_o_1': high_data[3][5],
+                    'p1_c_mt_h_l_o_1': high_data[3][6],
+                    'p1_c_h_l_o_2': high_data[3][7],
+                    'p1_c_mt_h_l_o_2': high_data[3][8],
+                    'p1_Op_0,2_dwn': low_data[3][0],
+                    'p1_0,2_0,3_dwn': low_data[3][1],
+                    'p1_0,3_0,4_dwn': low_data[3][2],
+                    'p1_0,4_0,5_dwn': low_data[3][3],
+                    'p1_0,5_less_dwn': low_data[3][4],
+                    'p1_c_l_h_o_1': low_data[3][5],
+                    'p1_c_mt_l_h_o_1': low_data[3][6],
+                    'p1_c_l_h_o_2': low_data[3][7],
+                    'p1_c_mt_l_h_o_2': low_data[3][8],
+                    'p1_c_mt_h_l_m_05___1': m_data_many_tick[3][0],
+                    'p1_c_mt_h_l_m_05___1_5': m_data_many_tick[3][1],
+                    'p1_c_mt_l_h_m_05___1': m_data_many_tick[3][2],
+                    'p1_c_mt_l_h_m_05___1_5': m_data_many_tick[3][3],
+                    'p1_c_h_l_m_05___1': m_data_tick[3][0],
+                    'p1_c_h_l_m_05___1_5': m_data_tick[3][1],
+                    'p1_c_l_h_m_05___1': m_data_tick[3][2],
+                    'p1_c_l_h_m_05___1_5': m_data_tick[3][3],
 
-            print('Percentage +/- of ' + stock + ' =', pp_1,
-                  ';', pp_2, ';', pp_3, ';', pp_4, )
+                    'p1_c_mt_h_l_m_1___1': m_data_many_tick[3][4],
+                    'p1_c_mt_h_l_m_1___1_5': m_data_many_tick[3][5],
+                    'p1_c_mt_l_h_m_1___1': m_data_many_tick[3][6],
+                    'p1_c_mt_l_h_m_1___1_5': m_data_many_tick[3][7],
+                    'p1_c_h_l_m_1___1': m_data_tick[3][4],
+                    'p1_c_h_l_m_1___1_5': m_data_tick[3][5],
+                    'p1_c_l_h_m_1___1': m_data_tick[3][6],
+                    'p1_c_l_h_m_1___1_5': m_data_tick[3][7],
 
-            # try:
-            #     name_stock_exchange = self.get_name_stock_exchange(stock)
-            #
-            # except Exception:
-            #     print()
-            #     print(f"ERROR load name {stock} exchange of investpy ")
-            #     traceback.print_exc()
-            #     continue
+                    'Percentage_1': pp_1,
+                    '1_CLOSE_prev': np.array(df['Close'][-5:][1]),
+                    '1_Open_point': np.array(df['Open'][-5:][2]),
+                    '1_High_point': np.array(df['High'][-5:][2]),
+                    '1_Low_point': np.array(df['Low'][-5:][2]),
+                    '1_Close_point': np.array(df['Close'][-5:][2]),
 
-            try:
-                regularMarketVolume, averageVolume10days, recommendationMean, recommendationKey, quickRatio, currentRatio, pegRatio, shortRatio, payoutRatio = self.get_info_yh(
-                    stock)
+                    'p2_Op_0,5_up': high_data[2][0],
+                    'p2_0,5_1.0_up': high_data[2][1],
+                    'p2_1,0_1,5_up': high_data[2][2],
+                    'p2_1,5_2,0_up': high_data[2][3],
+                    'p2_2,0_over_up': high_data[2][4],
+                    'p2_c_h_l_o_1': high_data[2][5],
+                    'p2_c_mt_h_l_o_1': high_data[2][6],
+                    'p2_c_h_l_o_2': high_data[2][7],
+                    'p2_c_mt_h_l_o_2': high_data[2][8],
+                    'p2_Op_0,2_dwn': low_data[2][0],
+                    'p2_0,2_0,3_dwn': low_data[2][1],
+                    'p2_0,3_0,4_dwn': low_data[2][2],
+                    'p2_0,4_0,5_dwn': low_data[2][3],
+                    'p2_0,5_less_dwn': low_data[2][4],
+                    'p2_c_l_h_o_1': low_data[2][5],
+                    'p2_c_mt_l_h_o_1': low_data[2][6],
+                    'p2_c_l_h_o_2': low_data[2][7],
+                    'p2_c_mt_l_h_o_2': low_data[2][8],
+                    'p2_c_mt_h_l_m_05___1': m_data_many_tick[2][0],
+                    'p2_c_mt_h_l_m_05___1_5': m_data_many_tick[2][1],
+                    'p2_c_mt_l_h_m_05___1': m_data_many_tick[2][2],
+                    'p2_c_mt_l_h_m_05___1_5': m_data_many_tick[2][3],
+                    'p2_c_h_l_m_05___1': m_data_tick[2][0],
+                    'p2_c_h_l_m_05___1_5': m_data_tick[2][1],
+                    'p2_c_l_h_m_05___1': m_data_tick[2][2],
+                    'p2_c_l_h_m_05___1_5': m_data_tick[2][3],
 
+                    'p2_c_mt_h_l_m_1___1': m_data_many_tick[2][4],
+                    'p2_c_mt_h_l_m_1___1_5': m_data_many_tick[2][5],
+                    'p2_c_mt_l_h_m_1___1': m_data_many_tick[2][6],
+                    'p2_c_mt_l_h_m_1___1_5': m_data_many_tick[2][7],
+                    'p2_c_h_l_m_1___1': m_data_tick[2][4],
+                    'p2_c_h_l_m_1___1_5': m_data_tick[2][5],
+                    'p2_c_l_h_m_1___1': m_data_tick[2][6],
+                    'p2_c_l_h_m_1___1_5': m_data_tick[2][7],
 
+                    'Percentage_2': pp_2,
+                    '2_CLOSE_prev': np.array(df['Close'][-5:][2]),
+                    '2_Open_point': np.array(df['Open'][-5:][3]),
+                    '2_High_point': np.array(df['High'][-5:][3]),
+                    '2_Low_point': np.array(df['Low'][-5:][3]),
+                    '2_Close_point': np.array(df['Close'][-5:][3]),
 
-            except Exception:
-                print()
-                print(f"ERROR load name {stock} yahoo_rating")
-                traceback.print_exc()
-                continue
-            # print(high_data)
-            # print(low_data)
-            res_h_4 = sum(high_data[3][:5]) + sum(high_data[2][:5]) + sum(high_data[1][:5]) + sum(high_data[0][:5])
-            # print(high_data[3][:4])
-            res_l_4 = sum(low_data[3][:5]) + sum(low_data[2][:5]) + sum(low_data[1][:5]) + sum(low_data[0][:5])
+                    'p3_Op_0,5_up': high_data[1][0],
+                    'p3_0,5_1.0_up': high_data[1][1],
+                    'p3_1,0_1,5_up': high_data[1][2],
+                    'p3_1,5_2,0_up': high_data[1][3],
+                    'p3_2,0_over_up': high_data[1][4],
+                    'p3_c_h_l_o_1': high_data[1][5],
+                    'p3_c_mt_h_l_o_1': high_data[1][6],
+                    'p3_c_h_l_o_2': high_data[1][7],
+                    'p3_c_mt_h_l_o_2': high_data[1][8],
+                    'p3_Op_0,2_dwn': low_data[1][0],
+                    'p3_0,2_0,3_dwn': low_data[1][1],
+                    'p3_0,3_0,4_dwn': low_data[1][2],
+                    'p3_0,4_0,5_dwn': low_data[1][3],
+                    'p3_0,5_less_dwn': low_data[1][4],
+                    'p3_c_l_h_o_1': low_data[1][5],
+                    'p3_c_mt_l_h_o_1': low_data[1][6],
+                    'p3_c_l_h_o_2': low_data[1][7],
+                    'p3_c_mt_l_h_o_2': low_data[1][8],
+                    'p3_c_mt_h_l_m_05___1': m_data_many_tick[1][0],
+                    'p3_c_mt_h_l_m_05___1_5': m_data_many_tick[1][1],
+                    'p3_c_mt_l_h_m_05___1': m_data_many_tick[1][2],
+                    'p3_c_mt_l_h_m_05___1_5': m_data_many_tick[1][3],
+                    'p3_c_h_l_m_05___1': m_data_tick[1][0],
+                    'p3_c_h_l_m_05___1_5': m_data_tick[1][1],
+                    'p3_c_l_h_m_05___1': m_data_tick[1][2],
+                    'p3_c_l_h_m_05___1_5': m_data_tick[1][3],
 
-            res_h_2 = sum(high_data[1][:5]) + sum(high_data[0][:5])
-            res_l_2 = sum(low_data[1][:5]) + sum(low_data[0][:5])
+                    'p3_c_mt_h_l_m_1___1': m_data_many_tick[1][4],
+                    'p3_c_mt_h_l_m_1___1_5': m_data_many_tick[1][5],
+                    'p3_c_mt_l_h_m_1___1': m_data_many_tick[1][6],
+                    'p3_c_mt_l_h_m_1___1_5': m_data_many_tick[1][7],
+                    'p3_c_h_l_m_1___1': m_data_tick[1][4],
+                    'p3_c_h_l_m_1___1_5': m_data_tick[1][5],
+                    'p3_c_l_h_m_1___1': m_data_tick[1][6],
+                    'p3_c_l_h_m_1___1_5': m_data_tick[1][7],
 
-            res_mt_h_l_o_2_4 = high_data[0][8] + high_data[1][8] + high_data[2][8] + high_data[3][8]
-            res_1_5_o_up_4 = high_data[0][3] + high_data[1][3] + high_data[2][3] + high_data[3][3] + high_data[0][4] + \
-                             high_data[1][4] + high_data[2][4] + high_data[3][4]
+                    'Percentage_3': pp_3,
+                    '3_CLOSE_prev': np.array(df['Close'][-5:][3]),
+                    '3_Open_point': np.array(df['Open'][-5:][4]),
+                    '3_High_point': np.array(df['High'][-5:][4]),
+                    '3_Low_point': np.array(df['Low'][-5:][4]),
+                    '3_Close_point': np.array(df['Close'][-5:][4]),
 
-            res_mt_h_l_o_2_2 = high_data[0][8] + high_data[1][8]
-            res_1_5_o_up_2 = high_data[0][3] + high_data[1][3] + high_data[0][4] + high_data[1][4]
+                    'p4_Op_0,5_up': high_data[0][0],
+                    'p4_0,5_1.0_up': high_data[0][1],
+                    'p4_1,0_1,5_up': high_data[0][2],
+                    'p4_1,5_2,0_up': high_data[0][3],
+                    'p4_2,0_over_up': high_data[0][4],
+                    'p4_c_h_l_o_1': high_data[0][5],
+                    'p4_c_mt_h_l_o_1': high_data[0][6],
+                    'p4_c_h_l_o_2': high_data[0][7],
+                    'p4_c_mt_h_l_o_2': high_data[0][8],
+                    'p4_Op_0,2_dwn': low_data[0][0],
+                    'p4_0,2_0,3_dwn': low_data[0][1],
+                    'p4_0,3_0,4_dwn': low_data[0][2],
+                    'p4_0,4_0,5_dwn': low_data[0][3],
+                    'p4_0,5_less_dwn': low_data[0][4],
+                    'p4_c_l_h_o_1': low_data[0][5],
+                    'p4_c_mt_l_h_o_1': low_data[0][6],
+                    'p4_c_l_h_o_2': low_data[0][7],
+                    'p4_c_mt_l_h_o_2': low_data[0][8],
+                    'p4_c_mt_h_l_m_05___1': m_data_many_tick[0][0],
+                    'p4_c_mt_h_l_m_05___1_5': m_data_many_tick[0][1],
+                    'p4_c_mt_l_h_m_05___1': m_data_many_tick[0][2],
+                    'p4_c_mt_l_h_m_05___1_5': m_data_many_tick[0][3],
+                    'p4_c_h_l_m_05___1': m_data_tick[0][0],
+                    'p4_c_h_l_m_05___1_5': m_data_tick[0][1],
+                    'p4_c_l_h_m_05___1': m_data_tick[0][2],
+                    'p4_c_l_h_m_05___1_5': m_data_tick[0][3],
 
-            res_mt_l_h_o_2_4 = low_data[0][8] + low_data[1][8] + low_data[2][8] + low_data[3][8]
-            res_0_5_less_4 = low_data[0][4] + low_data[1][4] + low_data[2][4] + low_data[3][4]
+                    'p4_c_mt_h_l_m_1___1': m_data_many_tick[0][4],
+                    'p4_c_mt_h_l_m_1___1_5': m_data_many_tick[0][5],
+                    'p4_c_mt_l_h_m_1___1': m_data_many_tick[0][6],
+                    'p4_c_mt_l_h_m_1___1_5': m_data_many_tick[0][7],
+                    'p4_c_h_l_m_1___1': m_data_tick[0][4],
+                    'p4_c_h_l_m_1___1_5': m_data_tick[0][5],
+                    'p4_c_l_h_m_1___1': m_data_tick[0][6],
+                    'p4_c_l_h_m_1___1_5': m_data_tick[0][7],
 
-            res_mt_l_h_o_2_2 = low_data[0][8] + low_data[1][8]
-            res_0_5_less_2 = low_data[0][4] + low_data[1][4]
+                    'Percentage_4': pp_4,
+                    '4_CLOSE_prev': np.array(df['Close'][-5:][4]),
 
-            m_data_count_l_h_0_5_1_4 = m_data_tick[0][2] + m_data_tick[1][2] + m_data_tick[2][2] + m_data_tick[3][2]
-            m_data_count_l_h_0_5_1_2 = m_data_tick[0][2] + m_data_tick[1][2]
+                    'Count_H_4': res_h_4,
+                    'Count_L_4': res_l_4,
 
-            m_data_count_l_h_0_5_1_5_4 = m_data_tick[0][3] + m_data_tick[1][3] + m_data_tick[2][3] + m_data_tick[3][3]
-            m_data_count_l_h_0_5_1_5_2 = m_data_tick[0][3] + m_data_tick[1][3]
+                    'Count_H_2': res_h_2,
+                    'Count_L_2': res_l_2,
 
-            m_data_count_l_h_1_1_4 = m_data_tick[0][6] + m_data_tick[1][6] + m_data_tick[2][6] + m_data_tick[3][6]
-            m_data_count_l_h_1_1_2 = m_data_tick[0][6] + m_data_tick[1][6]
+                    'res_mt_h_l_o_2_4': res_mt_h_l_o_2_4,
+                    'res_1_5_o_up_4': res_1_5_o_up_4,
+                    'res_mt_h_l_o_2_2': res_mt_h_l_o_2_2,
+                    'res_1_5_o_up_2': res_1_5_o_up_2,
 
-            m_data_count_l_h_1_1_5_4 = m_data_tick[0][7] + m_data_tick[1][7] + m_data_tick[2][7] + m_data_tick[3][7]
-            m_data_count_l_h_1_1_5_2 = m_data_tick[0][7] + m_data_tick[1][7]
+                    'res_mt_l_h_o_2_4': res_mt_l_h_o_2_4,
+                    'res_0_5_less_4': res_0_5_less_4,
+                    'res_mt_l_h_o_2_2': res_mt_l_h_o_2_2,
+                    'res_0_5_less_2': res_0_5_less_2,
 
-            # m_data_many_l_h_4_1 = m_data_many_tick[0][]
-            # m_data_many_l_h_2_1 = sum(m_data_many_tick[0][:2]) + sum(m_data_many_tick[1][:2])
-            #
-            # m_data_tick_l_h_4_1 = sum(m_data_tick[0][:2]) + sum(m_data_tick[1][:2]) + sum(m_data_tick[2][:2]) + sum(
-            #     m_data_tick[3][:2])
-            # m_data_tick_l_h_2_1 = sum(m_data_tick[0][:2]) + sum(m_data_tick[1][:2])
+                    'm_data_count_l_h_0_5_1_4': m_data_count_l_h_0_5_1_4,
+                    'm_data_count_l_h_0_5_1_2': m_data_count_l_h_0_5_1_2,
+                    'm_data_count_l_h_0_5_1_5_4': m_data_count_l_h_0_5_1_5_4,
+                    'm_data_count_l_h_0_5_1_5_2': m_data_count_l_h_0_5_1_5_2,
 
-            # res_l = sum(low_data[3][0]) + sum(low_data[3][1]) + sum(low_data[3][2]) + sum(low_data[3][3]) + sum(low_data[3][4])
-            # print(res_h)
-            # print(res_l)
-            # exit()
+                    'm_data_count_l_h_1_1_4': m_data_count_l_h_1_1_4,
+                    'm_data_count_l_h_1_1_2': m_data_count_l_h_1_1_2,
+                    'm_data_count_l_h_1_1_5_4': m_data_count_l_h_1_1_5_4,
+                    'm_data_count_l_h_1_1_5_2': m_data_count_l_h_1_1_5_2,
 
-            # print(df)
-            # print(np.array(df['Close'][-5:][4]))
-            # print(np.array(df['Close'][-5:][3]))
-            data_ticker = data_ticker.append({
-                'TICKER': stock,
-                'Tech_buy': tech_buy,
-                'Tech_sell': tech_sell,
-                'SMA_buy': moving_sma_buy,
-                'SMA_sell': moving_sma_sell,
-                'SMA_20': sma_20,
-                'SMA_100': sma_100,
-                'EMA_buy': moving_ema_buy,
-                'EMA_sell': moving_ema_sell,
-                'EMA_20': ema_20,
-                'EMA_100': ema_100,
+                    # 'Exchange': name_stock_exchange,
+                    # 'Yahoo_Rating': yahoo_rating
 
-                'p1_Op_0,5_up': high_data[3][0],
-                'p1_0,5_1.0_up': high_data[3][1],
-                'p1_1,0_1,5_up': high_data[3][2],
-                'p1_1,5_2,0_up': high_data[3][3],
-                'p1_2,0_over_up': high_data[3][4],
-                'p1_c_h_l_o_1': high_data[3][5],
-                'p1_c_mt_h_l_o_1': high_data[3][6],
-                'p1_c_h_l_o_2': high_data[3][7],
-                'p1_c_mt_h_l_o_2': high_data[3][8],
-                'p1_Op_0,2_dwn': low_data[3][0],
-                'p1_0,2_0,3_dwn': low_data[3][1],
-                'p1_0,3_0,4_dwn': low_data[3][2],
-                'p1_0,4_0,5_dwn': low_data[3][3],
-                'p1_0,5_less_dwn': low_data[3][4],
-                'p1_c_l_h_o_1': low_data[3][5],
-                'p1_c_mt_l_h_o_1': low_data[3][6],
-                'p1_c_l_h_o_2': low_data[3][7],
-                'p1_c_mt_l_h_o_2': low_data[3][8],
-                'p1_c_mt_h_l_m_05___1': m_data_many_tick[3][0],
-                'p1_c_mt_h_l_m_05___1_5': m_data_many_tick[3][1],
-                'p1_c_mt_l_h_m_05___1': m_data_many_tick[3][2],
-                'p1_c_mt_l_h_m_05___1_5': m_data_many_tick[3][3],
-                'p1_c_h_l_m_05___1': m_data_tick[3][0],
-                'p1_c_h_l_m_05___1_5': m_data_tick[3][1],
-                'p1_c_l_h_m_05___1': m_data_tick[3][2],
-                'p1_c_l_h_m_05___1_5': m_data_tick[3][3],
+                    'Yahoo_Rating': recommendationMean,
+                    'Yahoo_Rating_Key': recommendationKey,
+                    'regVolume': regularMarketVolume,
+                    'avgVolume': averageVolume10days,
 
-                'p1_c_mt_h_l_m_1___1': m_data_many_tick[3][4],
-                'p1_c_mt_h_l_m_1___1_5': m_data_many_tick[3][5],
-                'p1_c_mt_l_h_m_1___1': m_data_many_tick[3][6],
-                'p1_c_mt_l_h_m_1___1_5': m_data_many_tick[3][7],
-                'p1_c_h_l_m_1___1': m_data_tick[3][4],
-                'p1_c_h_l_m_1___1_5': m_data_tick[3][5],
-                'p1_c_l_h_m_1___1': m_data_tick[3][6],
-                'p1_c_l_h_m_1___1_5': m_data_tick[3][7],
+                    'quickRatio': quickRatio,
+                    'currentRatio': currentRatio,
+                    'pegRatio': pegRatio,
+                    'shortRatio': shortRatio,
+                    'payoutRatio': payoutRatio
 
-                'Percentage_1': pp_1,
-                '1_CLOSE_prev': np.array(df['Close'][-5:][1]),
-                '1_Open_point': np.array(df['Open'][-5:][2]),
-                '1_High_point': np.array(df['High'][-5:][2]),
-                '1_Low_point': np.array(df['Low'][-5:][2]),
-                '1_Close_point': np.array(df['Close'][-5:][2]),
+                }, ignore_index=True)
+                # exit()
 
-                'p2_Op_0,5_up': high_data[2][0],
-                'p2_0,5_1.0_up': high_data[2][1],
-                'p2_1,0_1,5_up': high_data[2][2],
-                'p2_1,5_2,0_up': high_data[2][3],
-                'p2_2,0_over_up': high_data[2][4],
-                'p2_c_h_l_o_1': high_data[2][5],
-                'p2_c_mt_h_l_o_1': high_data[2][6],
-                'p2_c_h_l_o_2': high_data[2][7],
-                'p2_c_mt_h_l_o_2': high_data[2][8],
-                'p2_Op_0,2_dwn': low_data[2][0],
-                'p2_0,2_0,3_dwn': low_data[2][1],
-                'p2_0,3_0,4_dwn': low_data[2][2],
-                'p2_0,4_0,5_dwn': low_data[2][3],
-                'p2_0,5_less_dwn': low_data[2][4],
-                'p2_c_l_h_o_1': low_data[2][5],
-                'p2_c_mt_l_h_o_1': low_data[2][6],
-                'p2_c_l_h_o_2': low_data[2][7],
-                'p2_c_mt_l_h_o_2': low_data[2][8],
-                'p2_c_mt_h_l_m_05___1': m_data_many_tick[2][0],
-                'p2_c_mt_h_l_m_05___1_5': m_data_many_tick[2][1],
-                'p2_c_mt_l_h_m_05___1': m_data_many_tick[2][2],
-                'p2_c_mt_l_h_m_05___1_5': m_data_many_tick[2][3],
-                'p2_c_h_l_m_05___1': m_data_tick[2][0],
-                'p2_c_h_l_m_05___1_5': m_data_tick[2][1],
-                'p2_c_l_h_m_05___1': m_data_tick[2][2],
-                'p2_c_l_h_m_05___1_5': m_data_tick[2][3],
+                print(f'{stock} add to data...')
+                # index += 1
+                counter += 1
+                self.good_stocks.append(stock)
+                # self.bot.send( f'{len(good_stocks)}) {stock} add to data...')
+                time.sleep(1)
+                # print(f'down {self.data}')
+                # self.data.set_item_to_data(stock)
 
-                'p2_c_mt_h_l_m_1___1': m_data_many_tick[2][4],
-                'p2_c_mt_h_l_m_1___1_5': m_data_many_tick[2][5],
-                'p2_c_mt_l_h_m_1___1': m_data_many_tick[2][6],
-                'p2_c_mt_l_h_m_1___1_5': m_data_many_tick[2][7],
-                'p2_c_h_l_m_1___1': m_data_tick[2][4],
-                'p2_c_h_l_m_1___1_5': m_data_tick[2][5],
-                'p2_c_l_h_m_1___1': m_data_tick[2][6],
-                'p2_c_l_h_m_1___1_5': m_data_tick[2][7],
+                temp_str = f'{inxd} of {len(stocks["TICKER"])}'
+                # print(temp_str)
+                data_to_bot = [self.good_stocks, [temp_str]]
+                # print(data_to_bot)
+                self.bot.add_item_to_data(data_to_bot)
 
-                'Percentage_2': pp_2,
-                '2_CLOSE_prev': np.array(df['Close'][-5:][2]),
-                '2_Open_point': np.array(df['Open'][-5:][3]),
-                '2_High_point': np.array(df['High'][-5:][3]),
-                '2_Low_point': np.array(df['Low'][-5:][3]),
-                '2_Close_point': np.array(df['Close'][-5:][3]),
+                # self.bot.add_item_to_data(stock)
+                # self.bot.add_count_of_parse(temp_str)
+                #
+                # data_ticker.to_excel(f'{self.interval} {self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
+                #
+                # self.bot.send(f'parse with param : {self.interval} {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
+                # exit()
 
-                'p3_Op_0,5_up': high_data[1][0],
-                'p3_0,5_1.0_up': high_data[1][1],
-                'p3_1,0_1,5_up': high_data[1][2],
-                'p3_1,5_2,0_up': high_data[1][3],
-                'p3_2,0_over_up': high_data[1][4],
-                'p3_c_h_l_o_1': high_data[1][5],
-                'p3_c_mt_h_l_o_1': high_data[1][6],
-                'p3_c_h_l_o_2': high_data[1][7],
-                'p3_c_mt_h_l_o_2': high_data[1][8],
-                'p3_Op_0,2_dwn': low_data[1][0],
-                'p3_0,2_0,3_dwn': low_data[1][1],
-                'p3_0,3_0,4_dwn': low_data[1][2],
-                'p3_0,4_0,5_dwn': low_data[1][3],
-                'p3_0,5_less_dwn': low_data[1][4],
-                'p3_c_l_h_o_1': low_data[1][5],
-                'p3_c_mt_l_h_o_1': low_data[1][6],
-                'p3_c_l_h_o_2': low_data[1][7],
-                'p3_c_mt_l_h_o_2': low_data[1][8],
-                'p3_c_mt_h_l_m_05___1': m_data_many_tick[1][0],
-                'p3_c_mt_h_l_m_05___1_5': m_data_many_tick[1][1],
-                'p3_c_mt_l_h_m_05___1': m_data_many_tick[1][2],
-                'p3_c_mt_l_h_m_05___1_5': m_data_many_tick[1][3],
-                'p3_c_h_l_m_05___1': m_data_tick[1][0],
-                'p3_c_h_l_m_05___1_5': m_data_tick[1][1],
-                'p3_c_l_h_m_05___1': m_data_tick[1][2],
-                'p3_c_l_h_m_05___1_5': m_data_tick[1][3],
-
-                'p3_c_mt_h_l_m_1___1': m_data_many_tick[1][4],
-                'p3_c_mt_h_l_m_1___1_5': m_data_many_tick[1][5],
-                'p3_c_mt_l_h_m_1___1': m_data_many_tick[1][6],
-                'p3_c_mt_l_h_m_1___1_5': m_data_many_tick[1][7],
-                'p3_c_h_l_m_1___1': m_data_tick[1][4],
-                'p3_c_h_l_m_1___1_5': m_data_tick[1][5],
-                'p3_c_l_h_m_1___1': m_data_tick[1][6],
-                'p3_c_l_h_m_1___1_5': m_data_tick[1][7],
-
-                'Percentage_3': pp_3,
-                '3_CLOSE_prev': np.array(df['Close'][-5:][3]),
-                '3_Open_point': np.array(df['Open'][-5:][4]),
-                '3_High_point': np.array(df['High'][-5:][4]),
-                '3_Low_point': np.array(df['Low'][-5:][4]),
-                '3_Close_point': np.array(df['Close'][-5:][4]),
-
-                'p4_Op_0,5_up': high_data[0][0],
-                'p4_0,5_1.0_up': high_data[0][1],
-                'p4_1,0_1,5_up': high_data[0][2],
-                'p4_1,5_2,0_up': high_data[0][3],
-                'p4_2,0_over_up': high_data[0][4],
-                'p4_c_h_l_o_1': high_data[0][5],
-                'p4_c_mt_h_l_o_1': high_data[0][6],
-                'p4_c_h_l_o_2': high_data[0][7],
-                'p4_c_mt_h_l_o_2': high_data[0][8],
-                'p4_Op_0,2_dwn': low_data[0][0],
-                'p4_0,2_0,3_dwn': low_data[0][1],
-                'p4_0,3_0,4_dwn': low_data[0][2],
-                'p4_0,4_0,5_dwn': low_data[0][3],
-                'p4_0,5_less_dwn': low_data[0][4],
-                'p4_c_l_h_o_1': low_data[0][5],
-                'p4_c_mt_l_h_o_1': low_data[0][6],
-                'p4_c_l_h_o_2': low_data[0][7],
-                'p4_c_mt_l_h_o_2': low_data[0][8],
-                'p4_c_mt_h_l_m_05___1': m_data_many_tick[0][0],
-                'p4_c_mt_h_l_m_05___1_5': m_data_many_tick[0][1],
-                'p4_c_mt_l_h_m_05___1': m_data_many_tick[0][2],
-                'p4_c_mt_l_h_m_05___1_5': m_data_many_tick[0][3],
-                'p4_c_h_l_m_05___1': m_data_tick[0][0],
-                'p4_c_h_l_m_05___1_5': m_data_tick[0][1],
-                'p4_c_l_h_m_05___1': m_data_tick[0][2],
-                'p4_c_l_h_m_05___1_5': m_data_tick[0][3],
-
-                'p4_c_mt_h_l_m_1___1': m_data_many_tick[0][4],
-                'p4_c_mt_h_l_m_1___1_5': m_data_many_tick[0][5],
-                'p4_c_mt_l_h_m_1___1': m_data_many_tick[0][6],
-                'p4_c_mt_l_h_m_1___1_5': m_data_many_tick[0][7],
-                'p4_c_h_l_m_1___1': m_data_tick[0][4],
-                'p4_c_h_l_m_1___1_5': m_data_tick[0][5],
-                'p4_c_l_h_m_1___1': m_data_tick[0][6],
-                'p4_c_l_h_m_1___1_5': m_data_tick[0][7],
-
-                'Percentage_4': pp_4,
-                '4_CLOSE_prev': np.array(df['Close'][-5:][4]),
-
-                'Count_H_4': res_h_4,
-                'Count_L_4': res_l_4,
-
-                'Count_H_2': res_h_2,
-                'Count_L_2': res_l_2,
-
-                'res_mt_h_l_o_2_4': res_mt_h_l_o_2_4,
-                'res_1_5_o_up_4': res_1_5_o_up_4,
-                'res_mt_h_l_o_2_2': res_mt_h_l_o_2_2,
-                'res_1_5_o_up_2': res_1_5_o_up_2,
-
-                'res_mt_l_h_o_2_4': res_mt_l_h_o_2_4,
-                'res_0_5_less_4': res_0_5_less_4,
-                'res_mt_l_h_o_2_2': res_mt_l_h_o_2_2,
-                'res_0_5_less_2': res_0_5_less_2,
-
-                'm_data_count_l_h_0_5_1_4': m_data_count_l_h_0_5_1_4,
-                'm_data_count_l_h_0_5_1_2': m_data_count_l_h_0_5_1_2,
-                'm_data_count_l_h_0_5_1_5_4': m_data_count_l_h_0_5_1_5_4,
-                'm_data_count_l_h_0_5_1_5_2': m_data_count_l_h_0_5_1_5_2,
-
-                'm_data_count_l_h_1_1_4': m_data_count_l_h_1_1_4,
-                'm_data_count_l_h_1_1_2': m_data_count_l_h_1_1_2,
-                'm_data_count_l_h_1_1_5_4': m_data_count_l_h_1_1_5_4,
-                'm_data_count_l_h_1_1_5_2': m_data_count_l_h_1_1_5_2,
-
-                # 'Exchange': name_stock_exchange,
-                # 'Yahoo_Rating': yahoo_rating
-
-                'Yahoo_Rating': recommendationMean,
-                'Yahoo_Rating_Key': recommendationKey,
-                'regVolume': regularMarketVolume,
-                'avgVolume': averageVolume10days,
-
-                'quickRatio': quickRatio,
-                'currentRatio': currentRatio,
-                'pegRatio': pegRatio,
-                'shortRatio': shortRatio,
-                'payoutRatio': payoutRatio
-
-            }, ignore_index=True)
-            # exit()
-
-            print(f'{stock} add to data...')
-            # index += 1
-            counter += 1
-            self.good_stocks.append(stock)
-            # self.bot.send( f'{len(good_stocks)}) {stock} add to data...')
-            time.sleep(1)
-            # print(f'down {self.data}')
-            # self.data.set_item_to_data(stock)
-
-            temp_str = f'{inxd} of {len(stocks["TICKER"])}'
-            # print(temp_str)
-            data_to_bot = [self.good_stocks, [temp_str]]
-            # print(data_to_bot)
-            self.bot.add_item_to_data(data_to_bot)
-
-            # self.bot.add_item_to_data(stock)
-            # self.bot.add_count_of_parse(temp_str)
-            #
-            # data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
-            #
-            # self.bot.send(f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
-            # exit()
-
-            yield stock
-        data_ticker.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
+                yield stock
+        # data_ticker.to_excel(f'{self.interval} {self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=True, header=True)
+        data_ticker.to_excel(f'{self.interval}_data_ticker.xlsx', index=True, header=True)
         self.bot.send(
-            f'parse with param : {self.min_buy} vs {self.max_buy} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
+            f'parse with param : {self.interval} is DONE!! Size of good_stocks after analize = {len(self.good_stocks)}')
         # self.driver.close()
 
     def get_good_stocks(self):
@@ -900,7 +904,8 @@ class Parser(object):
         return percent_0_5, percent_1, percent_1_5, percent_2, percent_m_0_2, percent_m_0_3, percent_m_0_4, percent_m_0_5
 
     def addition_main_data_ticker(self):
-        data = pd.read_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx')
+        # data = pd.read_excel(f'{self.interval} {self.min_buy}_{self.max_buy}_data_ticker.xlsx')
+        data = pd.read_excel(f'{self.interval}_data_ticker.xlsx')
         for name in tqdm(data['TICKER']):
             time.sleep(3)
             # df = investpy.get_stock_historical_data(
@@ -935,12 +940,14 @@ class Parser(object):
                 print(f'ticker: {name} not available data')
                 continue
 
-        self.bot.send(f'addition_main_data_ticker  is DONE!!')
+        # self.bot.send(f'{self.interval} {self.min_buy}_{self.max_buy} addition_main_data_ticker  is DONE!!')
+        self.bot.send(f'{self.interval}_addition_main_data_ticker  is DONE!!')
 
         # data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
         # exit()
 
-        data.to_excel(f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
+        # data.to_excel(f'{self.interval} {self.min_buy}_{self.max_buy}_data_ticker.xlsx', index=False, header=True)
+        data.to_excel(f'{self.interval}_data_ticker.xlsx', index=False, header=True)
         # await self.bot.send( f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
         # self.bot.send_message('167381172', f'{self.min_buy}_{self.max_buy}_data_ticker.xlsx done')
         # self.bot.process_new_updates(['\zx'])
